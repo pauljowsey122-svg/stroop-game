@@ -34,15 +34,15 @@
 
   .container {
     width: 100%;
-    max-width: 500px;
+    max-width: 600px;
     text-align: center;
   }
 
   /* ---------- 卡片 ---------- */
   .card {
     background: var(--card);
-    border-radius: 20px;
-    padding: 32px 24px;
+    border-radius: 24px;
+    padding: 40px 32px;
     box-shadow: 0 8px 32px rgba(0,0,0,.3);
   }
 
@@ -76,9 +76,9 @@
 
   /* ---------- 刺激词 ---------- */
   #stimulus {
-    font-size: clamp(3rem, 12vw, 5rem);
+    font-size: clamp(4rem, 14vw, 6rem);
     font-weight: 900;
-    margin: 24px 0 32px;
+    margin: 28px 0 36px;
     letter-spacing: .04em;
     min-height: 1.3em;
     line-height: 1.2;
@@ -88,26 +88,25 @@
   .color-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    max-width: 360px;
+    gap: 18px;
+    max-width: 480px;
     margin: 0 auto;
   }
 
   .color-btn {
-    padding: 22px 12px;
-    border: 3px solid transparent;
+    padding: 28px 16px;
+    border: 2px solid rgba(255,255,255,.15);
     border-radius: 16px;
-    font-size: 1.15rem;
+    font-size: 1.4rem;
     font-weight: 700;
     cursor: pointer;
-    color: #fff;
-    letter-spacing: .05em;
+    background: #2a2a4a;
+    color: #ddd;
+    text-align: center;
+    letter-spacing: .06em;
     transition: transform .12s, border-color .12s, opacity .12s;
   }
   .color-btn:active { transform: scale(.94); }
-  .color-btn.correct-highlight { border-color: #fff !important; }
-
-  .color-btn { background: #2a2a4a; border: 2px solid rgba(255,255,255,.12); color: #ccc; }
 
   /* ---------- 进度 ---------- */
   .progress-wrap {
@@ -188,10 +187,10 @@
 
   /* 移动端适配 */
   @media (max-width: 400px) {
-    .card { padding: 24px 16px; }
-    .color-btn { padding: 18px 8px; font-size: 1rem; }
-    #stimulus { margin: 16px 0 24px; }
-    .color-grid { gap: 10px; }
+    .card { padding: 28px 18px; }
+    .color-btn { padding: 22px 12px; font-size: 1.2rem; }
+    #stimulus { margin: 20px 0 28px; }
+    .color-grid { gap: 12px; }
   }
 </style>
 </head>
