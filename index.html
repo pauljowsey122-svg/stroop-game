@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>斯特鲁普效应实验</title>
+<style>
+  :root {
+    --red: #e74c3c;
+    --blue: #3498db;
+    --green: #2ecc71;
+    --yellow: #f1c40f;
+    --bg: #1a1a2e;
+    --card: #16213e;
+    --text: #eee;
+    --sub: #aaa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+  }
+
+  /* ---------- 卡片 ---------- */
+  .card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 32px 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.3);
+  }
+
+  h1 {
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    margin-bottom: 8px;
+    letter-spacing: .02em;
+  }
+
+  .subtitle {
+    color: var(--sub);
+    font-size: .9rem;
+    margin-bottom: 24px;
+  }
+
+  /* ---------- 按钮 ---------- */
+  .btn {
+    display: inline-block;
+    padding: 14px 36px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    letter-spacing: .03em;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn-primary { background: #667eea; color: #fff; }
+  .btn-primary:hover { box-shadow: 0 4px 16px rgba(102,126,234,.4); }
+
+  /* ---------- 刺激词 ---------- */
+  #stimulus {
+    font-size: clamp(3rem, 12vw, 5rem);
+    font-weight: 900;
+    margin: 24px 0 32px;
+    letter-spacing: .04em;
+    min-height: 1.3em;
+    line-height: 1.2;
+  }
+
+  /* ---------- 颜色按钮网格 ---------- */
+  .color-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  .color-btn {
+    padding: 22px 12px;
+    border: 3px solid transparent;
+    border-radius: 16px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #fff;
+    letter-spacing: .05em;
+    transition: transform .12s, border-color .12s, opacity .12s;
+  }
+  .color-btn:active { transform: scale(.94); }
+  .color-btn.correct-highlight { border-color: #fff !important; }
+
+  .color-btn { background: #2a2a4a; border: 2px solid rgba(255,255,255,.12); color: #ccc; }
+
+  /* ---------- 进度 ---------- */
+  .progress-wrap {
+    margin-top: 24px;
+  }
+  .progress-bar {
+    height: 6px;
+    background: #2a2a4a;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #667eea;
+    border-radius: 3px;
+    transition: width .3s;
+    width: 0%;
+  }
+  .progress-text {
+    margin-top: 6px;
+    font-size: .8rem;
+    color: var(--sub);
+  }
+
+  /* ---------- 反馈 ---------- */
+  .feedback {
+    margin-top: 16px;
+    min-height: 28px;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .feedback.correct { color: var(--green); }
+  .feedback.wrong   { color: var(--red); }
+
+  /* ---------- 结果页 ---------- */
+  .results { text-align: left; }
+  .results h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.4rem;
+  }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    font-size: .95rem;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-val { font-weight: 700; color: #667eea; }
+
+  .highlight-box {
+    background: rgba(102,126,234,.12);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 20px;
+    text-align: center;
+  }
+  .highlight-box p {
+    font-size: .9rem;
+    color: var(--sub);
+    line-height: 1.6;
+  }
+  .highlight-box strong { color: var(--text); }
+
+  /* ---------- 隐藏 ---------- */
+  .hidden { display: none !important; }
+
+  /* ---------- 说明 ---------- */
+  .instructions {
+    font-size: .9rem;
+    color: var(--sub);
+    line-height: 1.7;
+    margin-bottom: 28px;
+    text-align: left;
+  }
+  .instructions em { color: #f1c40f; font-style: normal; }
+
+  /* 移动端适配 */
+  @media (max-width: 400px) {
+    .card { padding: 24px 16px; }
+    .color-btn { padding: 18px 8px; font-size: 1rem; }
+    #stimulus { margin: 16px 0 24px; }
+    .color-grid { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ==================== 欢迎页 ==================== -->
+  <div id="screen-welcome" class="card">
+    <h1>🧠 斯特鲁普效应实验</h1>
+    <p class="subtitle">Stroop Effect · 色彩与文字的较量</p>
+
+    <div class="instructions">
+      <p>屏幕上会显示一个表示颜色的<em>词语</em>，但词语的<em>显示颜色</em>可能与词义不同。</p>
+      <p style="margin-top:8px;">你的任务是：<em>忽略词义</em>，尽快点击下方<em>显示颜色</em>对应的按钮。</p>
+      <p style="margin-top:12px; font-size:.82rem;">
+        例：看到 <span style="color:#e74c3c;font-weight:700;">蓝色</span> → 应选 <span style="color:#e74c3c;font-weight:700;">红色</span>（字是红色的）
+      </p>
+    </div>
+
+    <p style="font-size:.85rem;color:var(--sub);margin-bottom:20px;">
+      共 <span id="total-rounds-display">30</span> 轮 · 预计耗时约 2 分钟
+    </p>
+
+    <button class="btn btn-primary" onclick="startGame()">开始实验</button>
+  </div>
+
+  <!-- ==================== 游戏页 ==================== -->
+  <div id="screen-game" class="card hidden">
+    <div id="stimulus"></div>
+
+    <div class="color-grid">
+      <div id="color-buttons" class="color-grid"></div>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-text" id="progress-text">第 1 / 30 轮</div>
+    </div>
+  </div>
+
+  <!-- ==================== 结果页 ==================== -->
+  <div id="screen-results" class="card hidden">
+    <div class="results">
+      <h2>📊 实验结果</h2>
+      <div class="stat-row">
+        <span>总轮数</span>
+        <span class="stat-val" id="res-total"></span>
+      </div>
+      <div class="stat-row">
+        <span>正确率</span>
+        <span class="stat-val" id="res-accuracy"></span>
+      </div>
+      <div class="stat-row">
+        <span>平均反应时间</span>
+        <span class="stat-val" id="res-avg-rt"></span>
+      </div>
+      <div class="stat-row">
+        <span>最快反应</span>
+        <span class="stat-val" id="res-fastest"></span>
+      </div>
+      <div class="stat-row">
+        <span>一致条件 · 平均反应时间</span>
+        <span class="stat-val" id="res-congruent"></span>
+      </div>
+      <div class="stat-row">
+        <span>冲突条件 · 平均反应时间</span>
+        <span class="stat-val" id="res-incongruent"></span>
+      </div>
+
+      <div class="highlight-box" id="stroop-effect-box">
+        <p id="stroop-effect-text"></p>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="margin-top:24px;" onclick="startGame()">再测一次</button>
+  </div>
+
+</div>
+
+<script>
+// ==================== 游戏逻辑 ====================
+
+const COLORS = ['red', 'blue', 'green', 'yellow'];
+const COLOR_HEX = {
+  red:    '#e74c3c',
+  blue:   '#3498db',
+  green:  '#2ecc71',
+  yellow: '#f1c40f'
+};
+const COLOR_NAMES_CN = {
+  red: '红色', blue: '蓝色', green: '绿色', yellow: '黄色'
+};
+
+const TOTAL_ROUNDS = 30;
+
+let trials        = [];   // [{word, color, congruent}]
+let currentIndex  = 0;
+let results       = [];   // [{word, color, answer, correct, rt}]
+let trialStart    = 0;
+let gameActive    = false;
+
+// ---------- 生成试次序列 ----------
+function generateTrials(n) {
+  const list = [];
+  for (let i = 0; i < n; i++) {
+    const word  = COLORS[Math.floor(Math.random() * COLORS.length)];
+    let color;
+    if (Math.random() < 0.5) {
+      // 一致条件
+      color = word;
+    } else {
+      // 冲突条件：随机其他颜色
+      const others = COLORS.filter(c => c !== word);
+      color = others[Math.floor(Math.random() * others.length)];
+    }
+    list.push({ word, color, congruent: word === color });
+  }
+  return list;
+}
+
+// ---------- 界面切换 ----------
+function showScreen(id) {
+  document.getElementById('screen-welcome').classList.add('hidden');
+  document.getElementById('screen-game').classList.add('hidden');
+  document.getElementById('screen-results').classList.add('hidden');
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ---------- 开始游戏 ----------
+function startGame() {
+  trials       = generateTrials(TOTAL_ROUNDS);
+  currentIndex = 0;
+  results      = [];
+  gameActive   = true;
+
+  showScreen('screen-game');
+  document.getElementById('total-rounds-display').textContent = TOTAL_ROUNDS;
+  showTrial();
+}
+
+// ---------- 渲染按钮（随机排列） ----------
+function renderButtons() {
+  const container = document.getElementById('color-buttons');
+  const shuffled  = [...COLORS].sort(() => Math.random() - 0.5);
+  container.innerHTML = shuffled.map(c =>
+    `<button class="color-btn" onclick="answer('${c}')">${COLOR_NAMES_CN[c]}</button>`
+  ).join('');
+}
+
+// ---------- 显示当前试次 ----------
+function showTrial() {
+  if (currentIndex >= trials.length) {
+    endGame();
+    return;
+  }
+
+  const t = trials[currentIndex];
+  const el = document.getElementById('stimulus');
+  el.textContent = COLOR_NAMES_CN[t.word];
+  el.style.color = COLOR_HEX[t.color];
+
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+
+  // 进度条
+  const pct = (currentIndex / TOTAL_ROUNDS) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent =
+    `第 ${currentIndex + 1} / ${TOTAL_ROUNDS} 轮`;
+
+  renderButtons();
+  trialStart = performance.now();
+}
+
+// ---------- 作答 ----------
+function answer(userColor) {
+  if (!gameActive) return;
+
+  const rt    = performance.now() - trialStart;
+  const trial = trials[currentIndex];
+  const correct = (userColor === trial.color);
+
+  results.push({
+    word:      trial.word,
+    color:     trial.color,
+    answer:    userColor,
+    correct:   correct,
+    congruent: trial.congruent,
+    rt:        rt
+  });
+
+  // 反馈
+  const fb = document.getElementById('feedback');
+  if (correct) {
+    fb.textContent = '✓ 正确';
+    fb.className = 'feedback correct';
+  } else {
+    fb.textContent = `✗ 错误（词义：${COLOR_NAMES_CN[trial.word]}，颜色：${COLOR_NAMES_CN[trial.color]}）`;
+    fb.className = 'feedback wrong';
+  }
+
+  currentIndex++;
+  gameActive = false;
+
+  // 短暂延迟后下一题
+  setTimeout(() => {
+    gameActive = true;
+    showTrial();
+  }, 400);
+}
+
+// ---------- 结束游戏 ----------
+function endGame() {
+  gameActive = false;
+
+  const total        = results.length;
+  const correctCount = results.filter(r => r.correct).length;
+  const accuracy     = total > 0 ? (correctCount / total * 100) : 0;
+  const avgRT        = total > 0 ? results.reduce((s, r) => s + r.rt, 0) / total : 0;
+  const fastest      = total > 0 ? Math.min(...results.map(r => r.rt)) : 0;
+
+  const congruentTrials     = results.filter(r => r.congruent && r.correct);
+  const incongruentTrials   = results.filter(r => !r.congruent && r.correct);
+  const avgCongruent        = congruentTrials.length   > 0 ? congruentTrials.reduce((s,r)=>s+r.rt,0)   / congruentTrials.length   : 0;
+  const avgIncongruent      = incongruentTrials.length > 0 ? incongruentTrials.reduce((s,r)=>s+r.rt,0) / incongruentTrials.length : 0;
+
+  const rtDiff = avgIncongruent - avgCongruent;
+  const rtDiffPct = avgCongruent > 0 ? (rtDiff / avgCongruent * 100) : 0;
+
+  document.getElementById('res-total').textContent        = `${total}（正确 ${correctCount} 次）`;
+  document.getElementById('res-accuracy').textContent     = accuracy.toFixed(1) + '%';
+  document.getElementById('res-avg-rt').textContent       = avgRT.toFixed(0) + ' ms';
+  document.getElementById('res-fastest').textContent      = fastest.toFixed(0) + ' ms';
+  document.getElementById('res-congruent').textContent    = avgCongruent.toFixed(0) + ' ms';
+  document.getElementById('res-incongruent').textContent  = avgIncongruent.toFixed(0) + ' ms';
+
+  // 斯特鲁普效应解读
+  const box = document.getElementById('stroop-effect-text');
+  if (congruentTrials.length > 0 && incongruentTrials.length > 0 && rtDiff > 0) {
+    box.innerHTML =
+      `在冲突条件下，你的反应比一致条件慢了 <strong>${rtDiff.toFixed(0)} ms</strong>（约 ${rtDiffPct.toFixed(0)}%）。<br><br>
+      这就是经典的<strong>斯特鲁普效应</strong>：当词义与颜色不一致时，大脑需要额外的认知资源去抑制自动化的阅读反应，导致反应变慢。`;
+  } else if (rtDiff <= 0 && congruentTrials.length > 0 && incongruentTrials.length > 0) {
+    box.innerHTML =
+      `这次实验中冲突条件的反应时间并未明显更慢。这可能是因为你进行了充分的练习，或者样本量较小。斯特鲁普效应通常在更多试次下会稳定显现。`;
+  } else {
+    box.innerHTML =
+      `需要更多有效数据来观察斯特鲁普效应。建议再测一次，尽量又快又准地作答。`;
+  }
+
+  showScreen('screen-results');
+}
+
+// ---------- 初始化 ----------
+showScreen('screen-welcome');
+</script>
+</body>
+</html>
