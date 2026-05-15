@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>认知冲突：反向箭头 · 车轮战</title>
+<style>
+  :root {
+    --red:#e74c3c; --blue:#3498db; --green:#2ecc71;
+    --bg:#0b0b1a; --card:#12122e; --text:#eee; --sub:#888;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;
+    display:flex;justify-content:center;align-items:center;
+    padding:10px;user-select:none;-webkit-user-select:none;overflow-x:hidden;
+  }
+  .container{width:100%;max-width:820px;text-align:center}
+  .hidden{display:none!important}
+
+  /* ========== 全局闪光/震动 ========== */
+  .flash-overlay{
+    position:fixed;inset:0;pointer-events:none;z-index:999;
+    opacity:0;transition:opacity .2s;
+  }
+  .flash-overlay.green{background:rgba(46,204,113,.3);opacity:1}
+  .flash-overlay.red{background:rgba(231,76,60,.35);opacity:1}
+
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    15%{transform:translateX(-12px)translateY(3px)}
+    30%{transform:translateX(12px)translateY(-3px)}
+    45%{transform:translateX(-8px)translateY(-2px)}
+    60%{transform:translateX(8px)translateY(2px)}
+    75%{transform:translateX(-4px)}
+  }
+  .shake-hard{animation:shake .45s ease}
+
+  /* 中央大字反馈 */
+  .big-fb{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)scale(0);
+    font-size:10rem;font-weight:900;pointer-events:none;z-index:1000;
+    transition:transform .15s cubic-bezier(.175,.885,.32,1.275);
+    text-shadow:0 0 60px currentColor;
+  }
+  .big-fb.show{transform:translate(-50%,-50%)scale(1)}
+  .big-fb.green{color:#2ecc71}
+  .big-fb.red{color:#e74c3c}
+
+  /* ========== 设置页 ========== */
+  .card{
+    background:var(--card);border-radius:20px;
+    padding:32px 28px;box-shadow:0 8px 40px rgba(0,0,0,.5);
+  }
+  .setup-title{font-size:1.8rem;margin-bottom:4px}
+  .setup-sub{color:var(--sub);font-size:.9rem;margin-bottom:20px}
+  .setup-desc{font-size:.85rem;color:var(--sub);line-height:1.7;margin-bottom:24px;text-align:left;max-width:480px;margin-left:auto;margin-right:auto}
+  .setup-desc em{color:#f1c40f;font-style:normal}
+
+  .group-select{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:26px}
+  .group-option{
+    width:90px;height:90px;border-radius:18px;
+    border:3px solid rgba(255,255,255,.1);background:#1a1a38;
+    color:#ccc;font-size:1.1rem;font-weight:700;
+    cursor:pointer;transition:all .18s;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  }
+  .group-option:hover{border-color:#667eea;background:#222250}
+  .group-option.selected{border-color:#667eea;background:#2a2a5a;color:#fff;box-shadow:0 0 20px rgba(102,126,234,.3)}
+  .group-option .icon{font-size:1.8rem}
+  .setup-btns{display:flex;gap:14px;justify-content:center}
+
+  /* ========== 通用按钮 ========== */
+  .btn{
+    display:inline-block;padding:13px 30px;border:none;
+    border-radius:12px;font-size:1.1rem;font-weight:700;
+    cursor:pointer;transition:transform .12s;letter-spacing:.04em;
+  }
+  .btn:active{transform:scale(.95)}
+  .btn-primary{background:#667eea;color:#fff;font-size:1.15rem;padding:15px 42px}
+  .btn-primary:hover{box-shadow:0 4px 18px rgba(102,126,234,.5)}
+  .btn-danger{background:#e74c3c;color:#fff}
+
+  /* ========== 顶部栏 ========== */
+  .top-bar{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;
+  }
+  .team-indicator{font-size:1.2rem;font-weight:800}
+  .timer-display{
+    font-size:2rem;font-weight:900;font-variant-numeric:tabular-nums;min-width:55px;
+  }
+  .timer-display.warn{color:#e74c3c;animation:pulse .5s ease infinite alternate}
+  @keyframes pulse{to{opacity:.4}}
+
+  /* ========== 计分板 ========== */
+  .score-panel{
+    position:fixed;right:10px;top:50%;transform:translateY(-50%);
+    display:flex;flex-direction:column;gap:7px;z-index:100;
+  }
+  .score-card{
+    background:rgba(16,16,36,.9);border-radius:10px;
+    padding:9px 12px;border:2px solid rgba(255,255,255,.08);
+    backdrop-filter:blur(6px);min-width:55px;text-align:center;
+    transition:all .3s;
+  }
+  .score-card.active{border-color:#667eea;box-shadow:0 0 14px rgba(102,126,234,.4)}
+  .score-card .name{font-size:.68rem;color:var(--sub)}
+  .score-card .pts{font-size:1.3rem;font-weight:900}
+  .score-card .pts.pop{animation:sp .35s ease}
+  @keyframes sp{0%{transform:scale(1)}50%{transform:scale(1.7);color:#2ecc71}100%{transform:scale(1)}}
+
+  @media(max-width:700px){
+    .score-panel{position:static;transform:none;flex-direction:row;justify-content:center;margin-bottom:6px}
+    .score-card{padding:6px 10px;min-width:42px}
+    .score-card .pts{font-size:1rem}
+  }
+
+  /* ========== 规则横幅 ========== */
+  .rule-banner{
+    margin:8px 0;font-size:.9rem;color:var(--sub);
+    border:1px solid rgba(255,255,255,.08);border-radius:10px;
+    padding:6px 16px;display:inline-block;
+  }
+  .rule-banner .match{color:var(--green)}
+  .rule-banner .clash{color:#e74c3c}
+
+  /* ========== 中央图形 ========== */
+  .figure-area{
+    position:relative;width:280px;height:280px;margin:12px auto 20px;
+  }
+  .circle-ring{
+    position:absolute;inset:0;border-radius:50%;
+    border:10px solid #888;
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .3s;
+  }
+  .circle-ring.color-red{border-color:var(--red);box-shadow:0 0 30px rgba(231,76,60,.3)}
+  .circle-ring.color-blue{border-color:var(--blue);box-shadow:0 0 30px rgba(52,152,219,.3)}
+
+  .arrow-svg{
+    width:120px;height:160px;transition:fill .3s,transform .15s;
+  }
+  .arrow-svg.dir-up{transform:rotate(0)}
+  .arrow-svg.dir-right{transform:rotate(90deg)}
+  .arrow-svg.dir-down{transform:rotate(180deg)}
+  .arrow-svg.dir-left{transform:rotate(270deg)}
+
+  /* ========== 方向按钮（十字布局） ========== */
+  .dir-grid{
+    display:grid;grid-template-columns:1fr 1fr 1fr;
+    grid-template-rows:auto auto auto;
+    gap:12px;max-width:400px;margin:0 auto;
+  }
+  .dir-cell{display:flex;align-items:center;justify-content:center}
+  .dir-btn{
+    width:100%;max-width:120px;aspect-ratio:1;
+    border:3px solid rgba(255,255,255,.1);border-radius:18px;
+    background:rgba(20,20,50,.8);color:#ddd;
+    font-size:1.8rem;font-weight:900;cursor:pointer;
+    transition:transform .1s,background .15s,border-color .15s;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .dir-btn:hover{border-color:rgba(255,255,255,.35);background:rgba(30,30,70,.9)}
+  .dir-btn:active{transform:scale(.92)}
+  .dir-btn.locked{pointer-events:none;opacity:.35}
+
+  /* ========== 暂停按钮 ========== */
+  .pause-btn{
+    position:fixed;bottom:16px;left:16px;z-index:500;
+    padding:9px 16px;border-radius:14px;
+    border:2px solid rgba(255,255,255,.1);background:rgba(0,0,0,.45);
+    color:#888;font-size:.85rem;font-weight:700;cursor:pointer;
+    transition:all .15s;backdrop-filter:blur(6px);
+    display:flex;align-items:center;gap:6px;
+  }
+  .pause-btn:hover{border-color:#fff;color:#fff;background:rgba(0,0,0,.7)}
+
+  .pause-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.78);
+    display:flex;align-items:center;justify-content:center;z-index:2000;
+  }
+  .pause-card{
+    background:var(--card);border-radius:22px;
+    padding:34px 40px;text-align:center;
+    box-shadow:0 8px 40px rgba(0,0,0,.6);
+  }
+  .pause-card h2{font-size:1.6rem;margin-bottom:12px}
+  .pause-card .btn{margin:6px;min-width:110px}
+
+  /* ========== 结算 ========== */
+  .rank-list{text-align:left}
+  .rank-row{
+    display:flex;align-items:center;gap:12px;
+    padding:15px 18px;border-radius:12px;margin-bottom:7px;
+    background:#1a1a35;border:2px solid rgba(255,255,255,.05);
+  }
+  .rank-row:nth-child(1){border-color:#f1c40f;background:#2a2610}
+  .rank-row:nth-child(2){border-color:#aaa}
+  .rank-row:nth-child(3){border-color:#cd7f32}
+  .rank-num{font-size:1.7rem;font-weight:900;min-width:42px;text-align:center}
+  .rank-name{flex:1;font-size:1.1rem;font-weight:700}
+  .rank-score{font-size:1.4rem;font-weight:900;color:#667eea}
+
+  /* ========== 响应式 ========== */
+  @media(max-width:600px){
+    .card{padding:18px 10px}
+    .figure-area{width:200px;height:200px}
+    .circle-ring{border-width:7px}
+    .arrow-svg{width:90px;height:120px}
+    .dir-grid{max-width:320px;gap:8px}
+    .dir-btn{font-size:1.3rem;max-width:90px}
+    .team-indicator{font-size:1rem}
+    .big-fb{font-size:6rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- 闪光 -->
+<div class="flash-overlay" id="flash"></div>
+
+<!-- 大反馈 -->
+<div class="big-fb" id="big-fb"></div>
+
+<!-- 暂停遮罩 -->
+<div class="pause-overlay hidden" id="pause-overlay">
+  <div class="pause-card">
+    <h2>⏸ 教师控制台</h2>
+    <p style="color:var(--sub);margin-bottom:14px">当前：<span id="pause-team"></span></p>
+    <button class="btn btn-primary" onclick="resumeGame()">继续游戏</button>
+    <button class="btn" style="background:#e67e22;color:#fff" onclick="resetRound()">重新开始本轮</button>
+    <button class="btn btn-danger" onclick="endGameEarly()">结束游戏 · 查看排行榜</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ==================== 设置页 ==================== -->
+  <div id="screen-setup" class="card">
+    <h1 class="setup-title">🧭 认知冲突：反向箭头</h1>
+    <p class="setup-sub">Cognitive Conflict · Reverse Arrow · 车轮战</p>
+    <div class="setup-desc">
+      <p>🎯 屏幕中央出现圆圈 + 箭头，请判断正确答案的方向：</p>
+      <p style="margin-top:8px"><em>颜色相同</em>（箭头色 = 圆圈色）→ 选 <em>箭头指向</em></p>
+      <p><em>颜色不同</em>（箭头色 ≠ 圆圈色）→ 选 <em>箭头反方向</em></p>
+      <p style="margin-top:8px;font-size:.8rem">⚡ 抑制直觉反应，克服认知冲突！</p>
+    </div>
+    <p style="font-size:1rem;font-weight:700;margin-bottom:14px">选择队伍数量</p>
+    <div class="group-select" id="group-select">
+      <div class="group-option selected" data-groups="2">
+        <span class="icon">🔴🔵</span><span>2 组</span>
+      </div>
+      <div class="group-option" data-groups="3">
+        <span class="icon">🔴🔵🟢</span><span>3 组</span>
+      </div>
+      <div class="group-option" data-groups="4">
+        <span class="icon">🔴🔵🟢🟡</span><span>4 组</span>
+      </div>
+    </div>
+    <div class="setup-btns">
+      <button class="btn btn-primary" onclick="startGame()">确认开始</button>
+      <button class="btn" style="background:#333;color:#aaa" onclick="resetSetup()">重置</button>
+    </div>
+  </div>
+
+  <!-- ==================== 游戏页 ==================== -->
+  <div id="screen-game" class="card hidden">
+
+    <!-- 顶部 -->
+    <div class="top-bar">
+      <div class="team-indicator" id="team-indicator">🔴 第 1 组 回合</div>
+      <div class="timer-display" id="timer-display">90</div>
+    </div>
+
+    <!-- 规则横幅 -->
+    <div class="rule-banner">
+      <span class="match">颜色相同 = 原方向</span>
+      &nbsp;|&nbsp;
+      <span class="clash">颜色不同 = 反方向</span>
+    </div>
+
+    <!-- 中央图形 -->
+    <div class="figure-area">
+      <div class="circle-ring" id="circle-ring">
+        <svg class="arrow-svg" id="arrow-svg" viewBox="0 0 100 140">
+          <polygon id="arrow-head" points="50,0 100,60 75,60 75,140 25,140 25,60 0,60"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 方向按钮十字布局 -->
+    <div class="dir-grid">
+      <div class="dir-cell"></div>
+      <div class="dir-cell"><button class="dir-btn" id="btn-up" onclick="answer('up')">▲<br>上</button></div>
+      <div class="dir-cell"></div>
+
+      <div class="dir-cell"><button class="dir-btn" id="btn-left" onclick="answer('left')">◀<br>左</button></div>
+      <div class="dir-cell"></div>
+      <div class="dir-cell"><button class="dir-btn" id="btn-right" onclick="answer('right')">▶<br>右</button></div>
+
+      <div class="dir-cell"></div>
+      <div class="dir-cell"><button class="dir-btn" id="btn-down" onclick="answer('down')">▼<br>下</button></div>
+      <div class="dir-cell"></div>
+    </div>
+
+    <!-- 暂停按钮 -->
+    <button class="pause-btn" onclick="pauseGame()">⏸ 菜单 (Esc)</button>
+  </div>
+
+  <!-- ==================== 结算页 ==================== -->
+  <div id="screen-results" class="card hidden">
+    <h2 style="font-size:1.7rem;margin-bottom:4px">🏆 最终排名</h2>
+    <p style="color:var(--sub);margin-bottom:20px">认知冲突 · 反向箭头 · 车轮战结果</p>
+    <div class="rank-list" id="rank-list"></div>
+    <button class="btn btn-primary" style="margin-top:22px" onclick="backToSetup()">返回大厅</button>
+  </div>
+
+</div>
+
+<!-- 计分板 -->
+<div class="score-panel hidden" id="score-panel"></div>
+
+<script>
+// ==================== 音效 ====================
+let ac=null;
+function ctx(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();return ac}
+function beep(f,t,d,v=.1,dl=0){
+  try{const c=ctx(),o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,c.currentTime+dl);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+dl+d);o.connect(g);g.connect(c.destination);o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d)}catch(e){}
+}
+function sfxCorrect(){beep(880,'sine',.1,.1);setTimeout(()=>beep(1100,'sine',.1,.09),80)}
+function sfxWrong(){beep(100,'square',.2,.1)}
+function sfxEnd(){[440,554,660,880].forEach((f,i)=>setTimeout(()=>beep(f,'triangle',.25,.12),i*120))}
+
+// ==================== 常量 ====================
+const TEAM_DOTS=['🔴','🔵','🟢','🟡'];
+const TEAM_COLORS=['#e74c3c','#3498db','#2ecc71','#f1c40f'];
+const DIRECTIONS=['up','down','left','right'];
+const DIR_OPPOSITE={up:'down',down:'up',left:'right',right:'left'};
+const COLORS_LIST=['red','blue'];
+const COOLDOWN_MS=400;
+const GAME_SECONDS=90;
+
+// ==================== 状态 ====================
+let numTeams=2,teams=[],currentTeam=0;
+let arrowDir,arrowColor,circleColor,correctAnswer;
+let gameActive=false,locked=false,paused=false;
+let timerHandle=null,timeLeft=0;
+
+// ==================== 设置页 ====================
+document.getElementById('group-select').addEventListener('click',e=>{
+  const opt=e.target.closest('.group-option');if(!opt)return;
+  document.querySelectorAll('.group-option').forEach(o=>o.classList.remove('selected'));
+  opt.classList.add('selected');numTeams=parseInt(opt.dataset.groups);
+});
+function resetSetup(){
+  document.querySelectorAll('.group-option').forEach(o=>o.classList.toggle('selected',o.dataset.groups=='2'));
+  numTeams=2;
+}
+function showScreen(id){
+  ['screen-setup','screen-game','screen-results'].forEach(s=>document.getElementById(s).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ==================== 开始游戏 ====================
+function startGame(){
+  teams=[];for(let i=0;i<numTeams;i++)teams.push({name:`第 ${i+1} 组`,score:0});
+  currentTeam=0;gameActive=true;locked=false;paused=false;timeLeft=GAME_SECONDS;
+
+  showScreen('screen-game');
+  document.getElementById('score-panel').classList.remove('hidden');
+  document.getElementById('timer-display').classList.remove('warn');
+  renderScorePanel();
+  newTrial();
+  startTimer();
+}
+function startTimer(){
+  clearInterval(timerHandle);
+  timerHandle=setInterval(()=>{
+    if(paused)return;
+    timeLeft--;
+    const el=document.getElementById('timer-display');
+    el.textContent=timeLeft;
+    el.classList.toggle('warn',timeLeft<=10);
+    if(timeLeft<=0)endGame();
+  },1000);
+}
+
+// ==================== 生成新试次 ====================
+function newTrial(){
+  arrowDir=DIRECTIONS[Math.floor(Math.random()*4)];
+  arrowColor=COLORS_LIST[Math.floor(Math.random()*2)];
+  circleColor=COLORS_LIST[Math.floor(Math.random()*2)];
+
+  // 判定正确答案
+  if(arrowColor===circleColor){
+    correctAnswer=arrowDir;  // 一致：选箭头方向
+  }else{
+    correctAnswer=DIR_OPPOSITE[arrowDir];  // 冲突：选反方向
+  }
+
+  renderFigure();
+  updateTeamUI();
+  setLocked(false);
+}
+
+// ==================== 渲染图形 ====================
+function renderFigure(){
+  const circle=document.getElementById('circle-ring');
+  circle.classList.remove('color-red','color-blue');
+  circle.classList.add('color-'+circleColor);
+
+  const arrow=document.getElementById('arrow-svg');
+  arrow.classList.remove('dir-up','dir-down','dir-left','dir-right');
+  arrow.classList.add('dir-'+arrowDir);
+
+  document.getElementById('arrow-head').setAttribute('fill',
+    arrowColor==='red'?'#e74c3c':'#3498db');
+}
+
+// ==================== 答题 ====================
+function answer(dir){
+  if(!gameActive||locked||paused)return;
+  setLocked(true);
+
+  const correct=(dir===correctAnswer);
+  if(correct){
+    teams[currentTeam].score++;
+    sfxCorrect();
+    flashScreen('green');
+    showBigFb('✓','green');
+    flashScore(currentTeam);
+  }else{
+    sfxWrong();
+    flashScreen('red');
+    document.body.classList.add('shake-hard');
+    setTimeout(()=>document.body.classList.remove('shake-hard'),450);
+    showBigFb('✗','red');
+  }
+  renderScorePanel();
+
+  // 切换队伍
+  currentTeam=(currentTeam+1)%numTeams;
+
+  setTimeout(()=>{
+    if(gameActive&&!paused)newTrial();
+  },COOLDOWN_MS);
+}
+
+// ==================== UI 更新 ====================
+function updateTeamUI(){
+  document.getElementById('team-indicator').innerHTML=
+    `${TEAM_DOTS[currentTeam]} <span style="color:${TEAM_COLORS[currentTeam]};font-weight:900">${teams[currentTeam].name}</span> 回合`;
+}
+function renderScorePanel(){
+  document.getElementById('score-panel').innerHTML=teams.map((t,i)=>`
+    <div class="score-card${i===currentTeam?' active':''}">
+      <div class="name">${TEAM_DOTS[i]} ${t.name}</div>
+      <div class="pts" style="color:${TEAM_COLORS[i]}">${t.score}</div>
+    </div>
+  `).join('');
+}
+function flashScore(idx){
+  const cards=document.querySelectorAll('.score-card .pts');
+  if(cards[idx]){cards[idx].classList.add('pop');setTimeout(()=>cards[idx].classList.remove('pop'),350)}
+}
+function setLocked(v){
+  locked=v;
+  document.querySelectorAll('.dir-btn').forEach(b=>b.classList.toggle('locked',v));
+}
+
+// ==================== 视觉反馈 ====================
+function flashScreen(type){
+  const el=document.getElementById('flash');
+  el.classList.add(type);
+  setTimeout(()=>el.classList.remove(type),400);
+}
+function showBigFb(sym,cls){
+  const el=document.getElementById('big-fb');
+  el.textContent=sym;
+  el.className='big-fb '+cls+' show';
+  setTimeout(()=>{el.className='big-fb '+cls},300);
+}
+
+// ==================== 键盘 ====================
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(paused){resumeGame();return}
+    if(gameActive)pauseGame();
+    return;
+  }
+  if(!gameActive||locked||paused)return;
+  // 方向键快捷操作
+  if(e.key==='ArrowUp'){e.preventDefault();answer('up')}
+  else if(e.key==='ArrowDown'){e.preventDefault();answer('down')}
+  else if(e.key==='ArrowLeft'){e.preventDefault();answer('left')}
+  else if(e.key==='ArrowRight'){e.preventDefault();answer('right')}
+});
+
+// ==================== 暂停 ====================
+function pauseGame(){
+  if(!gameActive)return;
+  paused=true;setLocked(true);
+  document.getElementById('pause-team').textContent=`${TEAM_DOTS[currentTeam]} ${teams[currentTeam].name}`;
+  document.getElementById('pause-overlay').classList.remove('hidden');
+}
+function resumeGame(){
+  paused=false;setLocked(false);
+  document.getElementById('pause-overlay').classList.add('hidden');
+}
+function resetRound(){
+  document.getElementById('pause-overlay').classList.add('hidden');
+  paused=false;newTrial();
+}
+function endGameEarly(){
+  document.getElementById('pause-overlay').classList.add('hidden');
+  paused=false;gameActive=false;showResults();
+}
+
+// ==================== 结算 ====================
+function endGame(){
+  clearInterval(timerHandle);
+  gameActive=false;setLocked(true);
+  document.getElementById('score-panel').classList.add('hidden');
+  sfxEnd();showResults();
+}
+function showResults(){
+  const ranked=[...teams].sort((a,b)=>b.score-a.score);
+  document.getElementById('rank-list').innerHTML=ranked.map((t,i)=>`
+    <div class="rank-row">
+      <div class="rank-num">${['🥇','🥈','🥉','🏅'][i]||''}</div>
+      <div class="rank-name"><span style="color:${TEAM_COLORS[teams.indexOf(t)]}">${TEAM_DOTS[teams.indexOf(t)]}</span> ${t.name}</div>
+      <div class="rank-score">${t.score} 分</div>
+    </div>
+  `).join('');
+  showScreen('screen-results');
+}
+function backToSetup(){
+  clearInterval(timerHandle);gameActive=false;
+  document.getElementById('score-panel').classList.add('hidden');
+  showScreen('screen-setup');
+}
+
+showScreen('screen-setup');
+</script>
+</body>
+</html>
