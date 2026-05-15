@@ -252,6 +252,7 @@
     <h2>⏸ 游戏暂停</h2>
     <p style="color:var(--sub);margin-bottom:20px;">剩余时间：<span id="pause-time"></span></p>
     <button class="btn btn-primary" onclick="resumeGame()">继续游戏</button>
+        <button class="btn" style="background:#e67e22;color:#fff;" onclick="restartRound()">重新开始本轮</button>
     <button class="btn btn-danger"  onclick="abortGame()">结束游戏</button>
   </div>
 </div>
@@ -575,13 +576,37 @@ function abortGame() {
   clearInterval(timerHandle);
   gameActive = false;
   paused = false;
+  cooldown = false;
   document.getElementById('pause-overlay').classList.add('hidden');
   backToSetup();
 }
 
+function restartRound() {
+  for (let i = 0; i < numTeams; i++) teams[i].score = 0;
+  currentTeam = 0;
+  trialIndex  = 0;
+  timeLeft    = totalSeconds;
+  cooldown    = false;
+  paused      = false;
+  gameActive  = true;
+  trials = generateFairTrials(Math.max(totalSeconds * 2, 60));
+  document.getElementById('pause-overlay').classList.add('hidden');
+  renderScoreboard();
+  updateTimer();
+  updateTeamIndicator();
+  showTrial();
+  clearInterval(timerHandle);
+  timerHandle = setInterval(() => {
+    if (paused) return;
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+}
+
 // ==================== 键盘 ====================
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
+  if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
     if (paused) resumeGame();
     else if (gameActive) pauseGame();
   }
