@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>排爆大冒险 · 车轮战</title>
+<style>
+  :root {
+    --red:#e74c3c; --blue:#3498db; --green:#2ecc71; --yellow:#f1c40f;
+    --bg:#080812; --card:#111128; --text:#eee; --sub:#888;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg); color:var(--text); min-height:100vh;
+    display:flex; justify-content:center; align-items:center;
+    padding:12px; user-select:none; -webkit-user-select:none; overflow-x:hidden;
+  }
+  .container{width:100%;max-width:820px;text-align:center}
+
+  .hidden{display:none!important}
+  .card{
+    background:var(--card); border-radius:24px;
+    padding:28px 24px; box-shadow:0 8px 48px rgba(0,0,0,.5); position:relative;
+  }
+
+  /* ========== 全局闪光 & 震动 ========== */
+  .flash-overlay{
+    position:fixed;inset:0;pointer-events:none;z-index:999;
+    opacity:0;transition:opacity .2s;
+  }
+  .flash-overlay.red{background:rgba(231,76,60,.4);opacity:1}
+  .flash-overlay.green{background:rgba(46,204,113,.3);opacity:1}
+  .flash-overlay.gold{background:rgba(241,196,15,.25);opacity:1}
+
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    15%{transform:translateX(-14px)translateY(4px)}
+    30%{transform:translateX(14px)translateY(-4px)}
+    45%{transform:translateX(-10px)translateY(-2px)}
+    60%{transform:translateX(10px)translateY(2px)}
+    75%{transform:translateX(-5px)}
+  }
+  .shake-hard{animation:shake .5s ease}
+
+  /* 大反馈字 */
+  .big-feedback{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)scale(0);
+    font-size:4rem;font-weight:900;pointer-events:none;z-index:1000;
+    transition:transform .2s cubic-bezier(.175,.885,.32,1.275);
+    text-shadow:0 0 50px currentColor; white-space:nowrap;
+  }
+  .big-feedback.show{transform:translate(-50%,-50%)scale(1)}
+  .big-feedback.bomb{color:#e74c3c}
+  .big-feedback.coin{color:#f1c40f}
+  .big-feedback.safe{color:#2ecc71}
+  .big-feedback.perfect{color:#f1c40f}
+
+  /* 飘分 */
+  .float-text{
+    position:fixed;pointer-events:none;z-index:1001;
+    font-size:2rem;font-weight:900;
+    animation:floatUp .8s ease-out forwards;
+  }
+  @keyframes floatUp{
+    0%{opacity:1;transform:translateY(0)scale(.5)}
+    30%{opacity:1;transform:translateY(-30px)scale(1.3)}
+    100%{opacity:0;transform:translateY(-80px)scale(1)}
+  }
+
+  /* ========== 设置页 ========== */
+  .setup-title{font-size:1.9rem;margin-bottom:6px}
+  .setup-sub{color:var(--sub);font-size:.9rem;margin-bottom:24px}
+  .setup-desc{font-size:.85rem;color:var(--sub);line-height:1.7;margin-bottom:24px;text-align:left;max-width:480px;margin-left:auto;margin-right:auto}
+  .setup-desc em{color:#f1c40f;font-style:normal}
+
+  .group-select{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:28px}
+  .group-option{
+    width:90px;height:90px;border-radius:18px;
+    border:3px solid rgba(255,255,255,.1);background:#1a1a3a;
+    color:#ccc;font-size:1.1rem;font-weight:700;
+    cursor:pointer;transition:all .18s;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  }
+  .group-option:hover{border-color:#667eea;background:#222250}
+  .group-option.selected{border-color:#667eea;background:#2a2a5a;color:#fff;box-shadow:0 0 20px rgba(102,126,234,.3)}
+  .group-option .icon{font-size:1.8rem}
+  .setup-buttons{display:flex;gap:14px;justify-content:center}
+
+  /* ========== 按钮通用 ========== */
+  .btn{
+    display:inline-block;padding:14px 32px;border:none;
+    border-radius:14px;font-size:1.1rem;font-weight:700;
+    cursor:pointer;transition:transform .12s;letter-spacing:.04em;
+  }
+  .btn:active{transform:scale(.95)}
+  .btn-primary{background:#667eea;color:#fff;font-size:1.2rem;padding:16px 44px}
+  .btn-primary:hover{box-shadow:0 4px 20px rgba(102,126,234,.5)}
+  .btn-danger{background:#e74c3c;color:#fff}
+
+  /* ========== 顶部栏 ========== */
+  .top-bar{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;
+  }
+  .team-indicator{font-size:1.3rem;font-weight:800}
+  .timer-display{
+    font-size:2.2rem;font-weight:900;font-variant-numeric:tabular-nums;
+    min-width:60px;text-align:center;
+  }
+  .timer-display.warning{color:#e74c3c;animation:pulse .6s ease infinite alternate}
+  @keyframes pulse{to{opacity:.4}}
+
+  /* ========== 侧边计分板 ========== */
+  .score-panel{
+    position:fixed;right:12px;top:50%;transform:translateY(-50%);
+    display:flex;flex-direction:column;gap:8px;z-index:100;
+  }
+  .score-card{
+    background:rgba(16,16,36,.9);border-radius:12px;
+    padding:10px 14px;border:2px solid rgba(255,255,255,.08);
+    backdrop-filter:blur(6px);min-width:60px;text-align:center;
+    transition:all .3s;
+  }
+  .score-card.active{border-color:#667eea;box-shadow:0 0 16px rgba(102,126,234,.4)}
+  .score-card .name{font-size:.7rem;color:var(--sub)}
+  .score-card .pts{font-size:1.4rem;font-weight:900}
+  .score-card .pts.pop{animation:scorePop .4s ease}
+  @keyframes scorePop{0%{transform:scale(1)}50%{transform:scale(1.6);color:#2ecc71}100%{transform:scale(1)}}
+
+  @media(max-width:700px){
+    .score-panel{position:static;transform:none;flex-direction:row;justify-content:center;margin-bottom:8px}
+    .score-card{padding:6px 10px;min-width:45px}
+    .score-card .pts{font-size:1.1rem}
+  }
+
+  /* ========== 奖金池 ========== */
+  .reward-area{margin:8px 0 12px}
+  .reward-display{
+    font-size:3rem;font-weight:900;color:#f1c40f;
+    text-shadow:0 0 30px rgba(241,196,15,.5);
+  }
+  .reward-hint{font-size:.8rem;color:var(--sub);margin-top:2px}
+
+  /* ========== 4x4 网格 ========== */
+  .grid-4x4{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:12px;max-width:520px;margin:0 auto;
+  }
+  .cell{
+    aspect-ratio:1;
+    perspective:600px;
+    cursor:pointer;
+  }
+  .cell-inner{
+    width:100%;height:100%;position:relative;
+    transition:transform .5s cubic-bezier(.4,0,.2,1);
+    transform-style:preserve-3d;
+  }
+  .cell.revealed .cell-inner{transform:rotateY(180deg)}
+  .cell-front,.cell-back{
+    position:absolute;inset:0;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    backface-visibility:hidden;
+  }
+
+  /* 正面：封闭盲盒 */
+  .cell-front{
+    background:linear-gradient(145deg,#2c2c44 0%,#1a1a30 50%,#252540 100%);
+    border:3px solid rgba(255,255,255,.12);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 4px 12px rgba(0,0,0,.4);
+    font-size:2rem;
+  }
+  .cell-front::after{
+    content:'';position:absolute;
+    top:8px;left:50%;transform:translateX(-50%);
+    width:40%;height:8px;background:rgba(255,255,255,.15);
+    border-radius:0 0 6px 6px;
+  }
+  .cell:hover .cell-front{border-color:rgba(255,255,255,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 16px rgba(102,126,234,.3)}
+  .cell.locked{pointer-events:none}
+  .cell.locked .cell-front{opacity:.5}
+
+  /* 翻开后全局可见模式（炸弹揭晓后） */
+  .cell.show-all .cell-inner{transform:rotateY(180deg)}
+  .cell.show-all .cell-back{opacity:.65}
+
+  /* 反面：金币 */
+  .cell-back.coin{
+    background:linear-gradient(135deg,#4a3800,#7d6600,#b8960c);
+    border:3px solid #f1c40f;
+    box-shadow:inset 0 0 20px rgba(241,196,15,.3),0 0 16px rgba(241,196,15,.4);
+    transform:rotateY(180deg);
+  }
+  .cell-back.coin .icon{font-size:2.2rem}
+
+  /* 反面：炸弹 */
+  .cell-back.bomb{
+    background:linear-gradient(135deg,#3a0000,#6b0000,#8b0000);
+    border:3px solid #e74c3c;
+    box-shadow:inset 0 0 20px rgba(231,76,60,.3),0 0 20px rgba(231,76,60,.6);
+    transform:rotateY(180deg);
+  }
+  .cell-back.bomb .icon{font-size:2.2rem}
+
+  /* ========== 底部操作按钮 ========== */
+  .action-area{margin-top:16px}
+  .btn-cashout{
+    font-size:1.5rem;font-weight:900;padding:22px 50px;
+    border-radius:18px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#2ecc71,#27ae60);
+    color:#fff;box-shadow:0 6px 24px rgba(46,204,113,.4);
+    transition:transform .1s,box-shadow .15s,opacity .2s;
+    letter-spacing:.06em;
+  }
+  .btn-cashout:active{transform:scale(.93)}
+  .btn-cashout:hover{box-shadow:0 6px 32px rgba(46,204,113,.7)}
+  .btn-cashout:disabled{
+    opacity:.3;cursor:not-allowed;pointer-events:none;
+    background:linear-gradient(135deg,#555,#444);box-shadow:none;
+  }
+
+  /* ========== 暂停遮罩 ========== */
+  .pause-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.78);
+    display:flex;align-items:center;justify-content:center;z-index:2000;
+  }
+  .pause-card{
+    background:var(--card);border-radius:24px;
+    padding:36px 44px;text-align:center;
+    box-shadow:0 8px 48px rgba(0,0,0,.6);
+  }
+  .pause-card h2{font-size:1.7rem;margin-bottom:12px}
+  .pause-card .btn{margin:6px;min-width:120px}
+
+  /* ========== 结算页 ========== */
+  .rank-list{text-align:left}
+  .rank-row{
+    display:flex;align-items:center;gap:14px;
+    padding:16px 18px;border-radius:14px;margin-bottom:8px;
+    background:#1a1a3a;border:2px solid rgba(255,255,255,.06);
+  }
+  .rank-row:nth-child(1){border-color:#f1c40f;background:#2a2810}
+  .rank-row:nth-child(2){border-color:#aaa}
+  .rank-row:nth-child(3){border-color:#cd7f32}
+  .rank-num{font-size:1.8rem;font-weight:900;min-width:44px;text-align:center}
+  .rank-name{flex:1;font-size:1.1rem;font-weight:700}
+  .rank-score{font-size:1.5rem;font-weight:900;color:#667eea}
+
+  /* ========== 响应式 ========== */
+  @media(max-width:600px){
+    .card{padding:16px 10px}
+    .grid-4x4{gap:8px;max-width:360px}
+    .cell-front{font-size:1.5rem}
+    .cell-back.coin .icon,.cell-back.bomb .icon{font-size:1.5rem}
+    .reward-display{font-size:2rem}
+    .btn-cashout{font-size:1.2rem;padding:16px 32px}
+    .team-indicator{font-size:1rem}
+    .big-feedback{font-size:2.5rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- 全局闪光 -->
+<div class="flash-overlay" id="flash"></div>
+
+<!-- 大反馈字 -->
+<div class="big-feedback" id="big-fb"></div>
+
+<!-- 暂停遮罩 -->
+<div class="pause-overlay hidden" id="pause-overlay">
+  <div class="pause-card">
+    <h2>⏸ 教师控制台</h2>
+    <p style="color:var(--sub);margin-bottom:14px">当前：<span id="pause-team"></span></p>
+    <button class="btn btn-primary" onclick="resumeGame()">继续游戏</button>
+    <button class="btn" style="background:#e67e22;color:#fff" onclick="skipTeam()">跳过当前组</button>
+    <button class="btn btn-danger" onclick="endGameEarly()">结束游戏 · 查看排行榜</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ==================== 设置页 ==================== -->
+  <div id="screen-setup" class="card">
+    <h1 class="setup-title">💣 排爆大冒险</h1>
+    <p class="setup-sub">Bomb Defusal · 车轮战</p>
+    <div class="setup-desc">
+      <p>🔲 屏幕上有 16 个盲盒，其中藏着 <em>3 颗炸弹</em> 和 <em>13 颗金币</em></p>
+      <p>🪙 开出一个金币：+10 临时奖金，可继续开箱</p>
+      <p>💣 开出炸弹：奖金归零，换下一组</p>
+      <p>🏆 连续开出全部 <em>13 颗金币</em>：额外 +50 完美通关奖励</p>
+      <p>🖱 推荐用鼠标点击盲盒操作</p>
+    </div>
+    <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px">选择队伍数量</p>
+    <div class="group-select" id="group-select">
+      <div class="group-option selected" data-groups="2">
+        <span class="icon">🔴🔵</span><span>2 组</span>
+      </div>
+      <div class="group-option" data-groups="3">
+        <span class="icon">🔴🔵🟢</span><span>3 组</span>
+      </div>
+      <div class="group-option" data-groups="4">
+        <span class="icon">🔴🔵🟢🟡</span><span>4 组</span>
+      </div>
+    </div>
+    <div class="setup-buttons">
+      <button class="btn btn-primary" onclick="startGame()">确认开始</button>
+      <button class="btn" style="background:#333;color:#aaa" onclick="resetSetup()">重置</button>
+    </div>
+  </div>
+
+  <!-- ==================== 游戏页 ==================== -->
+  <div id="screen-game" class="card hidden">
+
+    <!-- 顶部栏 -->
+    <div class="top-bar">
+      <div class="team-indicator" id="team-indicator">🔴 第 1 组 回合</div>
+      <div class="timer-display" id="timer-display">90</div>
+      <div style="font-size:.75rem;color:var(--sub)">Esc</div>
+    </div>
+
+    <!-- 奖金池 -->
+    <div class="reward-area">
+      <div class="reward-display" id="reward-display">💰 0</div>
+      <div class="reward-hint">内含 3 颗 💣 · 13 颗 🪙 金币</div>
+    </div>
+
+    <!-- 4x4 盲盒矩阵 -->
+    <div class="grid-4x4" id="grid"></div>
+
+    <!-- 底部操作 -->
+    <div class="action-area">
+      <button class="btn-cashout" id="btn-cashout" disabled onclick="cashOut()">
+        🏦 见好就收（存入总分 · 换下一组）
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 结算页 ==================== -->
+  <div id="screen-results" class="card hidden">
+    <h2 style="font-size:1.8rem;margin-bottom:4px">🏆 最终排名</h2>
+    <p style="color:var(--sub);margin-bottom:20px">排爆大冒险 · 车轮战结果</p>
+    <div class="rank-list" id="rank-list"></div>
+    <button class="btn btn-primary" style="margin-top:24px" onclick="backToSetup()">返回大厅</button>
+  </div>
+
+</div>
+
+<!-- 侧边计分板 -->
+<div class="score-panel hidden" id="score-panel"></div>
+
+<script>
+// ==================== 音效 ====================
+let audioCtx=null;
+function ctx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
+function beep(f,t,d,v=.1,dl=0){
+  try{const c=ctx(),o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,c.currentTime+dl);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+dl+d);o.connect(g);g.connect(c.destination);o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d)}catch(e){}
+}
+function sfxCoin(){beep(880,'sine',.08,.08);setTimeout(()=>beep(1100,'sine',.1,.1),60)}
+function sfxBomb(){beep(50,'sawtooth',.5,.18);beep(35,'square',.4,.12,40)}
+function sfxCash(){beep(523,'triangle',.12,.1);setTimeout(()=>beep(659,'triangle',.12,.1),80);setTimeout(()=>beep(784,'triangle',.2,.15),160)}
+function sfxPerfect(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,'triangle',.15,.12),i*80))}
+function sfxEnd(){[440,554,660].forEach((f,i)=>setTimeout(()=>beep(f,'triangle',.3,.15),i*150))}
+
+// ==================== 常量 ====================
+const TEAM_DOTS=['🔴','🔵','🟢','🟡'];
+const TEAM_COLORS=['#e74c3c','#3498db','#2ecc71','#f1c40f'];
+const TOTAL_CELLS=16,BOMB_COUNT=3,COIN_COUNT=13;
+const COIN_PTS=10,PERFECT_BONUS=50;
+const COOLDOWN_MS=500,TURN_DELAY_MS=2000;
+const GAME_SECONDS=90;
+
+// ==================== 状态 ====================
+let numTeams=2,teams=[],currentTeam=0;
+let board=[],tempReward=0,openedCount=0,coinOpened=0;
+let gameActive=false,locked=false,paused=false;
+let timerHandle=null,timeLeft=0;
+
+// ==================== 设置页 ====================
+document.getElementById('group-select').addEventListener('click',e=>{
+  const opt=e.target.closest('.group-option');if(!opt)return;
+  document.querySelectorAll('.group-option').forEach(o=>o.classList.remove('selected'));
+  opt.classList.add('selected');numTeams=parseInt(opt.dataset.groups);
+});
+function resetSetup(){
+  document.querySelectorAll('.group-option').forEach(o=>o.classList.toggle('selected',o.dataset.groups=='2'));
+  numTeams=2;
+}
+function showScreen(id){
+  ['screen-setup','screen-game','screen-results'].forEach(s=>document.getElementById(s).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ==================== 开始游戏 ====================
+function startGame(){
+  teams=[];for(let i=0;i<numTeams;i++)teams.push({name:`第 ${i+1} 组`,score:0});
+  currentTeam=0;gameActive=true;locked=false;paused=false;timeLeft=GAME_SECONDS;
+
+  showScreen('screen-game');
+  document.getElementById('score-panel').classList.remove('hidden');
+  document.getElementById('timer-display').classList.remove('warning');
+
+  newRound();
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerHandle);
+  timerHandle=setInterval(()=>{
+    if(paused)return;
+    timeLeft--;
+    const el=document.getElementById('timer-display');
+    el.textContent=timeLeft;
+    el.classList.toggle('warning',timeLeft<=10);
+    if(timeLeft<=0)endGame();
+  },1000);
+}
+
+// ==================== 新回合 ====================
+function newRound(){
+  // 生成版面：随机放3个bomb,13个coin
+  board=new Array(TOTAL_CELLS).fill('coin');
+  // 放置炸弹
+  const indices=Array.from({length:TOTAL_CELLS},(_,i)=>i);
+  for(let i=indices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[indices[i],indices[j]]=[indices[j],indices[i]]}
+  for(let i=0;i<BOMB_COUNT;i++)board[indices[i]]='bomb';
+
+  tempReward=0;openedCount=0;coinOpened=0;
+  renderGrid();
+  updateReward();
+  updateCashOutBtn();
+  updateTeamUI();
+  setLocked(false);
+}
+
+function renderGrid(){
+  const grid=document.getElementById('grid');
+  grid.innerHTML=board.map((type,i)=>`
+    <div class="cell" id="cell-${i}" onclick="openCell(${i})">
+      <div class="cell-inner">
+        <div class="cell-front">❓</div>
+        <div class="cell-back ${type}"><span class="icon">${type==='bomb'?'💣':'🪙'}</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ==================== 开箱 ====================
+function openCell(i){
+  if(!gameActive||locked||paused)return;
+  const cell=document.getElementById('cell-'+i);
+  if(!cell||cell.classList.contains('revealed'))return;
+
+  setLocked(true);
+  cell.classList.add('revealed');
+  openedCount++;
+
+  if(board[i]==='coin'){
+    coinOpened++;
+    tempReward+=COIN_PTS;
+    sfxCoin();
+    floatText(cell,'+10','#f1c40f');
+    updateReward();
+    updateCashOutBtn();
+
+    // 完美通关？
+    if(coinOpened>=COIN_COUNT){
+      tempReward+=PERFECT_BONUS;
+      teams[currentTeam].score+=tempReward;
+      sfxPerfect();
+      flashScreen('gold');
+      showBigFb(`🏆 完美通关！\n+${tempReward} 分 (含${PERFECT_BONUS}奖励)`,'perfect');
+      flashScore(currentTeam);
+      updateReward();
+      renderScorePanel();
+      revealAll();
+      setTimeout(()=>nextTeam(),TURN_DELAY_MS+800);
+      return;
+    }
+    setTimeout(()=>setLocked(false),COOLDOWN_MS);
+  }else{
+    // 炸弹！
+    sfxBomb();
+    flashScreen('red');
+    document.body.classList.add('shake-hard');
+    setTimeout(()=>document.body.classList.remove('shake-hard'),500);
+    showBigFb('💥 踩雷！奖金清零','bomb');
+    tempReward=0;
+    updateReward();
+    revealAll(); // 展示全部位置
+    setTimeout(()=>nextTeam(),TURN_DELAY_MS);
+  }
+}
+
+// ==================== 收手 ====================
+function cashOut(){
+  if(!gameActive||locked||paused)return;
+  if(tempReward<=0)return;
+  setLocked(true);
+
+  teams[currentTeam].score+=tempReward;
+  sfxCash();
+  flashScreen('green');
+  showBigFb(`💰 安全落袋！+${tempReward} 分`,'safe');
+  flashScore(currentTeam);
+  renderScorePanel();
+
+  revealAll();
+  setTimeout(()=>nextTeam(),TURN_DELAY_MS);
+}
+
+// ==================== 换组 ====================
+function nextTeam(){
+  currentTeam=(currentTeam+1)%numTeams;
+  newRound();
+}
+function skipTeam(){
+  document.getElementById('pause-overlay').classList.add('hidden');
+  paused=false;
+  currentTeam=(currentTeam+1)%numTeams;
+  newRound();
+}
+
+// ==================== 展示全部 ====================
+function revealAll(){
+  for(let i=0;i<TOTAL_CELLS;i++){
+    const cell=document.getElementById('cell-'+i);
+    if(cell)cell.classList.add('show-all','revealed');
+  }
+}
+
+// ==================== UI 更新 ====================
+function updateReward(){
+  document.getElementById('reward-display').textContent='💰 '+tempReward;
+}
+function updateCashOutBtn(){
+  const btn=document.getElementById('btn-cashout');
+  btn.disabled=(coinOpened===0);
+}
+function updateTeamUI(){
+  document.getElementById('team-indicator').innerHTML=
+    `${TEAM_DOTS[currentTeam]} <span style="color:${TEAM_COLORS[currentTeam]};font-weight:900">${teams[currentTeam].name}</span> 回合`;
+  renderScorePanel();
+}
+function renderScorePanel(){
+  document.getElementById('score-panel').innerHTML=teams.map((t,i)=>`
+    <div class="score-card${i===currentTeam?' active':''}">
+      <div class="name">${TEAM_DOTS[i]} ${t.name}</div>
+      <div class="pts" style="color:${TEAM_COLORS[i]}">${t.score}</div>
+    </div>
+  `).join('');
+}
+function flashScore(idx){
+  const cards=document.querySelectorAll('.score-card .pts');
+  if(cards[idx]){cards[idx].classList.add('pop');setTimeout(()=>cards[idx].classList.remove('pop'),400)}
+}
+function setLocked(v){
+  locked=v;
+  document.querySelectorAll('.cell').forEach(c=>c.classList.toggle('locked',v));
+}
+
+// ==================== 视觉反馈 ====================
+function flashScreen(type){
+  const el=document.getElementById('flash');
+  el.classList.add(type);
+  setTimeout(()=>el.classList.remove(type),400);
+}
+function showBigFb(msg,cls){
+  const el=document.getElementById('big-fb');
+  el.textContent=msg;
+  el.className='big-feedback '+cls+' show';
+  setTimeout(()=>{el.className='big-feedback '+cls},800);
+}
+function floatText(cell,text,color){
+  const rect=cell.getBoundingClientRect();
+  const el=document.createElement('div');
+  el.className='float-text';el.textContent=text;el.style.color=color;
+  el.style.left=rect.left+rect.width/2+'px';el.style.top=rect.top+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),800);
+}
+
+// ==================== 键盘 ====================
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(paused){resumeGame();return}
+    if(gameActive)pauseGame();
+    return;
+  }
+});
+
+// ==================== 教师控制台 ====================
+function pauseGame(){
+  if(!gameActive)return;
+  paused=true;setLocked(true);
+  document.getElementById('pause-team').textContent=`${TEAM_DOTS[currentTeam]} ${teams[currentTeam].name}`;
+  document.getElementById('pause-overlay').classList.remove('hidden');
+}
+function resumeGame(){
+  paused=false;setLocked(false);
+  document.getElementById('pause-overlay').classList.add('hidden');
+}
+function endGameEarly(){
+  document.getElementById('pause-overlay').classList.add('hidden');
+  paused=false;gameActive=false;showResults();
+}
+
+// ==================== 结算 ====================
+function endGame(){
+  clearInterval(timerHandle);
+  gameActive=false;setLocked(true);
+  document.getElementById('score-panel').classList.add('hidden');
+  sfxEnd();showResults();
+}
+function showResults(){
+  const ranked=[...teams].sort((a,b)=>b.score-a.score);
+  document.getElementById('rank-list').innerHTML=ranked.map((t,i)=>`
+    <div class="rank-row">
+      <div class="rank-num">${['🥇','🥈','🥉','🏅'][i]||''}</div>
+      <div class="rank-name"><span style="color:${TEAM_COLORS[teams.indexOf(t)]}">${TEAM_DOTS[teams.indexOf(t)]}</span> ${t.name}</div>
+      <div class="rank-score">${t.score} 分</div>
+    </div>
+  `).join('');
+  showScreen('screen-results');
+}
+function backToSetup(){
+  clearInterval(timerHandle);gameActive=false;
+  document.getElementById('score-panel').classList.add('hidden');
+  showScreen('screen-setup');
+}
+
+// ==================== 初始化 ====================
+showScreen('screen-setup');
+</script>
+</body>
+</html>
