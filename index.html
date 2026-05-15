@@ -3,453 +3,630 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>斯特鲁普效应实验</title>
+<title>斯特鲁普效应 · 车轮战</title>
 <style>
   :root {
-    --red: #e74c3c;
-    --blue: #3498db;
-    --green: #2ecc71;
+    --red:    #e74c3c;
+    --blue:   #3498db;
+    --green:  #2ecc71;
     --yellow: #f1c40f;
-    --bg: #1a1a2e;
-    --card: #16213e;
-    --text: #eee;
-    --sub: #aaa;
+    --bg:     #0d0d1a;
+    --card:   #151530;
+    --text:   #eee;
+    --sub:    #aaa;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
+  * { margin:0; padding:0; box-sizing:border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
     padding: 16px;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-    -webkit-user-select: none;
+    user-select: none; -webkit-user-select: none;
+    overflow-x: hidden;
   }
+  .container { width: 100%; max-width: 800px; text-align: center; }
 
-  .container {
-    width: 100%;
-    max-width: 600px;
-    text-align: center;
-  }
-
-  /* ---------- 卡片 ---------- */
+  /* ============ 卡片 ============ */
   .card {
     background: var(--card);
     border-radius: 24px;
-    padding: 40px 32px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.3);
+    padding: 40px 36px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.4);
+    position: relative;
   }
 
-  h1 {
-    font-size: clamp(1.4rem, 5vw, 2rem);
-    margin-bottom: 8px;
-    letter-spacing: .02em;
-  }
-
-  .subtitle {
-    color: var(--sub);
-    font-size: .9rem;
-    margin-bottom: 24px;
-  }
-
-  /* ---------- 按钮 ---------- */
-  .btn {
-    display: inline-block;
-    padding: 14px 36px;
-    border: none;
-    border-radius: 12px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform .15s, box-shadow .15s;
-    letter-spacing: .03em;
-  }
-  .btn:active { transform: scale(.96); }
-  .btn-primary { background: #667eea; color: #fff; }
-  .btn-primary:hover { box-shadow: 0 4px 16px rgba(102,126,234,.4); }
-
-  /* ---------- 刺激词 ---------- */
-  #stimulus {
-    font-size: clamp(4rem, 14vw, 6rem);
-    font-weight: 900;
-    margin: 28px 0 36px;
-    letter-spacing: .04em;
-    min-height: 1.3em;
-    line-height: 1.2;
-  }
-
-  /* ---------- 颜色按钮网格 ---------- */
-  .color-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-    width: 100%;
-  }
-
-  .color-btn {
-    padding: 28px 16px;
-    border: 2px solid rgba(255,255,255,.15);
-    border-radius: 16px;
-    font-size: 1.4rem;
-    font-weight: 700;
-    cursor: pointer;
-    background: #2a2a4a;
-    color: #ddd;
-    text-align: center;
-    letter-spacing: .06em;
-    transition: transform .12s, border-color .12s, opacity .12s;
-  }
-  .color-btn:active { transform: scale(.94); }
-
-  /* ---------- 进度 ---------- */
-  .progress-wrap {
-    margin-top: 24px;
-  }
-  .progress-bar {
-    height: 6px;
-    background: #2a2a4a;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: #667eea;
-    border-radius: 3px;
-    transition: width .3s;
-    width: 0%;
-  }
-  .progress-text {
-    margin-top: 6px;
-    font-size: .8rem;
-    color: var(--sub);
-  }
-
-  /* ---------- 反馈 ---------- */
-  .feedback {
-    margin-top: 16px;
-    min-height: 28px;
-    font-size: 1.05rem;
-    font-weight: 600;
-  }
-  .feedback.correct { color: var(--green); }
-  .feedback.wrong   { color: var(--red); }
-
-  /* ---------- 结果页 ---------- */
-  .results { text-align: left; }
-  .results h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.4rem;
-  }
-  .stat-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,.08);
-    font-size: .95rem;
-  }
-  .stat-row:last-child { border-bottom: none; }
-  .stat-val { font-weight: 700; color: #667eea; }
-
-  .highlight-box {
-    background: rgba(102,126,234,.12);
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 20px;
-    text-align: center;
-  }
-  .highlight-box p {
-    font-size: .9rem;
-    color: var(--sub);
-    line-height: 1.6;
-  }
-  .highlight-box strong { color: var(--text); }
-
-  /* ---------- 隐藏 ---------- */
   .hidden { display: none !important; }
 
-  /* ---------- 说明 ---------- */
-  .instructions {
-    font-size: .9rem;
-    color: var(--sub);
-    line-height: 1.7;
-    margin-bottom: 28px;
-    text-align: left;
+  /* ============ 全局反馈闪光 ============ */
+  .flash-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 999;
+    opacity: 0; transition: opacity .15s;
   }
-  .instructions em { color: #f1c40f; font-style: normal; }
+  .flash-overlay.correct { background: rgba(46,204,113,.25); opacity:1; }
+  .flash-overlay.wrong   { background: rgba(231,76,60,.3);  opacity:1; }
 
-  /* 移动端适配 */
-  @media (max-width: 400px) {
-    .card { padding: 28px 18px; }
-    .color-btn { padding: 22px 12px; font-size: 1.2rem; }
-    #stimulus { margin: 20px 0 28px; }
-    .color-grid { gap: 12px; }
+  /* 屏幕震动 */
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%     { transform: translateX(-12px); }
+    40%     { transform: translateX(12px); }
+    60%     { transform: translateX(-8px); }
+    80%     { transform: translateX(8px); }
+  }
+  .shake { animation: shake .4s ease; }
+
+  /* ============ 按钮通用 ============ */
+  .btn {
+    display: inline-block; padding: 14px 36px; border: none;
+    border-radius: 12px; font-size: 1.1rem; font-weight: 700;
+    cursor: pointer; transition: transform .12s; letter-spacing: .04em;
+  }
+  .btn:active { transform: scale(.95); }
+  .btn-primary { background: #667eea; color: #fff; }
+  .btn-primary:hover { box-shadow: 0 4px 16px rgba(102,126,234,.5); }
+
+  /* ============ 设置页 ============ */
+  .setup-title { font-size: 1.8rem; margin-bottom: 8px; }
+  .setup-sub   { color: var(--sub); font-size: .95rem; margin-bottom: 32px; }
+
+  .group-select {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .group-option {
+    width: 100px; height: 100px; border-radius: 20px;
+    border: 3px solid rgba(255,255,255,.1); background: #1e1e40;
+    color: #ccc; font-size: 1.2rem; font-weight: 700;
+    cursor: pointer; transition: all .18s;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+  }
+  .group-option:hover { border-color: #667eea; background: #252550; }
+  .group-option.selected { border-color: #667eea; background: #2a2a5a; color: #fff; box-shadow: 0 0 24px rgba(102,126,234,.35); }
+  .group-option .icon { font-size: 2rem; }
+  .group-option .label { font-size: .85rem; color: var(--sub); }
+
+  .timer-select {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .time-option {
+    padding: 12px 24px; border-radius: 12px;
+    border: 3px solid rgba(255,255,255,.1); background: #1e1e40;
+    color: #ccc; font-size: 1.1rem; font-weight: 700;
+    cursor: pointer; transition: all .18s;
+  }
+  .time-option:hover { border-color: #667eea; }
+  .time-option.selected { border-color: #667eea; background: #2a2a5a; color: #fff; }
+
+  .setup-buttons { display: flex; gap: 14px; justify-content: center; }
+
+  /* ============ 游戏页 · 顶部栏 ============ */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .timer {
+    font-size: clamp(3rem, 8vw, 5rem);
+    font-weight: 900; font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .timer.warning { color: #e74c3c; animation: pulse .6s ease infinite alternate; }
+  @keyframes pulse { to { opacity: .5; } }
+
+  .pause-btn {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.15); background: transparent;
+    color: #888; font-size: 1.2rem; cursor: pointer;
+    transition: all .15s;
+  }
+  .pause-btn:hover { border-color: #fff; color: #fff; }
+
+  /* ============ 队伍提示 ============ */
+  .team-indicator {
+    font-size: 1.5rem; font-weight: 800; margin-bottom: 12px;
+    transition: color .25s;
+  }
+
+  /* ============ 刺激词 ============ */
+  #stimulus {
+    font-size: clamp(5rem, 16vw, 9rem);
+    font-weight: 900; letter-spacing: .06em;
+    margin: 20px 0 32px; line-height: 1.15; min-height: 1.2em;
+  }
+
+  /* ============ 颜色按钮网格 ============ */
+  .color-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; width: 100%; max-width: 560px; margin: 0 auto;
+  }
+  .color-btn {
+    padding: 32px 20px; border: 3px solid rgba(255,255,255,.1);
+    border-radius: 20px; font-size: 1.8rem; font-weight: 800;
+    cursor: pointer; background: #1e1e40; color: #ddd;
+    text-align: center; letter-spacing: .08em;
+    transition: transform .1s, background .15s, border-color .15s;
+    min-height: 90px; display: flex; align-items: center; justify-content: center;
+  }
+  .color-btn:hover { border-color: rgba(255,255,255,.35); background: #282850; }
+  .color-btn:active { transform: scale(.95); }
+  .color-btn.locked { pointer-events: none; opacity: .5; }
+
+  /* ============ 反馈大字 ============ */
+  .big-feedback {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0);
+    font-size: 8rem; font-weight: 900; pointer-events: none; z-index: 1000;
+    transition: transform .15s cubic-bezier(.175,.885,.32,1.275);
+  }
+  .big-feedback.show { transform: translate(-50%,-50%) scale(1); }
+  .big-feedback.correct { color: #2ecc71; text-shadow: 0 0 60px rgba(46,204,113,.7); }
+  .big-feedback.wrong   { color: #e74c3c; text-shadow: 0 0 60px rgba(231,76,60,.7); }
+
+  /* ============ 计分板 ============ */
+  .scoreboard {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+    margin-top: 24px;
+  }
+  .score-item {
+    background: #1e1e40; border-radius: 16px; padding: 16px 24px;
+    border: 3px solid rgba(255,255,255,.08); min-width: 80px;
+    transition: border-color .25s, box-shadow .25s, background .25s;
+  }
+  .score-item.active {
+    border-color: #667eea; box-shadow: 0 0 20px rgba(102,126,234,.4);
+    background: #252550;
+  }
+  .score-item .team-name { font-size: .85rem; color: var(--sub); margin-bottom: 4px; }
+  .score-item .team-score { font-size: 2rem; font-weight: 900; }
+
+  /* 队伍颜色点 */
+  .team-dot-A { color: #e74c3c; }
+  .team-dot-B { color: #3498db; }
+  .team-dot-C { color: #2ecc71; }
+  .team-dot-D { color: #f1c40f; }
+
+  /* ============ 暂停遮罩 ============ */
+  .pause-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000;
+  }
+  .pause-card {
+    background: var(--card); border-radius: 24px;
+    padding: 40px 48px; text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,.6);
+  }
+  .pause-card h2 { font-size: 2rem; margin-bottom: 16px; }
+  .pause-card .btn { margin: 8px; min-width: 120px; }
+  .btn-danger { background: #e74c3c; color: #fff; }
+
+  /* ============ 结算页 ============ */
+  .ranking-title { font-size: 2.2rem; margin-bottom: 8px; }
+  .ranking-sub   { color: var(--sub); margin-bottom: 28px; }
+
+  .rank-list { text-align: left; }
+  .rank-row {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px 20px; border-radius: 16px; margin-bottom: 10px;
+    background: #1e1e40; border: 2px solid rgba(255,255,255,.06);
+  }
+  .rank-row:nth-child(1) { border-color: #f1c40f; background: #2a2810; }
+  .rank-row:nth-child(2) { border-color: #aaa; background: #1e1e3a; }
+  .rank-row:nth-child(3) { border-color: #cd7f32; background: #1e1820; }
+
+  .rank-num { font-size: 2rem; font-weight: 900; min-width: 50px; text-align: center; }
+  .rank-name { flex:1; font-size: 1.2rem; font-weight: 700; }
+  .rank-score { font-size: 1.6rem; font-weight: 900; color: #667eea; }
+
+  .crown { font-size: 2.5rem; }
+
+  /* ============ 响应式 ============ */
+  @media (max-width: 600px) {
+    .card { padding: 24px 16px; }
+    .color-btn { padding: 24px 12px; font-size: 1.3rem; min-height: 70px; }
+    .color-grid { gap: 12px; max-width: 100%; }
+    #stimulus { margin: 12px 0 20px; }
+    .scoreboard { gap: 8px; }
+    .score-item { padding: 10px 14px; min-width: 60px; }
+    .score-item .team-score { font-size: 1.4rem; }
+    .timer { font-size: clamp(2rem, 6vw, 3.5rem); }
+    .team-indicator { font-size: 1.1rem; }
+    .group-option { width: 80px; height: 80px; }
+    .big-feedback { font-size: 5rem; }
   }
 </style>
 </head>
 <body>
 
+<!-- 全局闪光层 -->
+<div class="flash-overlay" id="flash"></div>
+
+<!-- 中央大反馈 -->
+<div class="big-feedback" id="big-fb"></div>
+
+<!-- 暂停遮罩 -->
+<div class="pause-overlay hidden" id="pause-overlay">
+  <div class="pause-card">
+    <h2>⏸ 游戏暂停</h2>
+    <p style="color:var(--sub);margin-bottom:20px;">剩余时间：<span id="pause-time"></span></p>
+    <button class="btn btn-primary" onclick="resumeGame()">继续游戏</button>
+    <button class="btn btn-danger"  onclick="abortGame()">结束游戏</button>
+  </div>
+</div>
+
 <div class="container">
 
-  <!-- ==================== 欢迎页 ==================== -->
-  <div id="screen-welcome" class="card">
-    <h1>🧠 斯特鲁普效应实验</h1>
-    <p class="subtitle">Stroop Effect · 色彩与文字的较量</p>
+  <!-- ==================== 设置页 ==================== -->
+  <div id="screen-setup" class="card">
+    <h1 class="setup-title">🧠 斯特鲁普效应 · 车轮战</h1>
+    <p class="setup-sub">课堂互动实验 · 大屏抢答模式</p>
 
-    <div class="instructions">
-      <p>屏幕上会显示一个表示颜色的<em>词语</em>，但词语的<em>显示颜色</em>可能与词义不同。</p>
-      <p style="margin-top:8px;">你的任务是：<em>忽略词义</em>，尽快点击下方<em>显示颜色</em>对应的按钮。</p>
-      <p style="margin-top:12px; font-size:.82rem;">
-        例：看到 <span style="color:#e74c3c;font-weight:700;">蓝色</span> → 应选 <span style="color:#e74c3c;font-weight:700;">红色</span>（字是红色的）
-      </p>
+    <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;">选择分组数量</p>
+    <div class="group-select" id="group-select">
+      <div class="group-option selected" data-groups="2">
+        <span class="icon">🔴🔵</span><span class="label">2 组</span>
+      </div>
+      <div class="group-option" data-groups="3">
+        <span class="icon">🔴🔵🟢</span><span class="label">3 组</span>
+      </div>
+      <div class="group-option" data-groups="4">
+        <span class="icon">🔴🔵🟢🟡</span><span class="label">4 组</span>
+      </div>
     </div>
 
-    <p style="font-size:.85rem;color:var(--sub);margin-bottom:20px;">
-      共 <span id="total-rounds-display">30</span> 轮 · 预计耗时约 2 分钟
-    </p>
+    <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;">倒计时时长</p>
+    <div class="timer-select" id="timer-select">
+      <div class="time-option" data-seconds="30">30 秒</div>
+      <div class="time-option selected" data-seconds="60">60 秒</div>
+      <div class="time-option" data-seconds="90">90 秒</div>
+      <div class="time-option" data-seconds="120">120 秒</div>
+    </div>
 
-    <button class="btn btn-primary" onclick="startGame()">开始实验</button>
+    <div class="setup-buttons">
+      <button class="btn btn-primary" onclick="startGame()" style="font-size:1.2rem;padding:16px 48px;">确认开始</button>
+      <button class="btn" style="background:#333;color:#aaa;" onclick="resetSetup()">重置</button>
+    </div>
   </div>
 
   <!-- ==================== 游戏页 ==================== -->
   <div id="screen-game" class="card hidden">
+
+    <!-- 顶部：计时 + 暂停 -->
+    <div class="top-bar">
+      <div style="width:48px;"></div>
+      <div class="timer" id="timer">60</div>
+      <button class="pause-btn" onclick="pauseGame()" title="暂停 (Esc)">⏸</button>
+    </div>
+
+    <!-- 当前队伍 -->
+    <div class="team-indicator" id="team-indicator">🔴 第 1 组 答题</div>
+
+    <!-- 刺激词 -->
     <div id="stimulus"></div>
 
-    <div class="color-grid">
-      <div id="color-buttons" class="color-grid"></div>
-    </div>
+    <!-- 选项按钮 -->
+    <div id="color-buttons" class="color-grid"></div>
 
-    <div class="feedback" id="feedback"></div>
-
-    <div class="progress-wrap">
-      <div class="progress-bar">
-        <div class="progress-fill" id="progress-fill"></div>
-      </div>
-      <div class="progress-text" id="progress-text">第 1 / 30 轮</div>
-    </div>
+    <!-- 计分板 -->
+    <div class="scoreboard" id="scoreboard"></div>
   </div>
 
-  <!-- ==================== 结果页 ==================== -->
+  <!-- ==================== 结算页 ==================== -->
   <div id="screen-results" class="card hidden">
-    <div class="results">
-      <h2>📊 实验结果</h2>
-      <div class="stat-row">
-        <span>总轮数</span>
-        <span class="stat-val" id="res-total"></span>
-      </div>
-      <div class="stat-row">
-        <span>正确率</span>
-        <span class="stat-val" id="res-accuracy"></span>
-      </div>
-      <div class="stat-row">
-        <span>平均反应时间</span>
-        <span class="stat-val" id="res-avg-rt"></span>
-      </div>
-      <div class="stat-row">
-        <span>最快反应</span>
-        <span class="stat-val" id="res-fastest"></span>
-      </div>
-      <div class="stat-row">
-        <span>一致条件 · 平均反应时间</span>
-        <span class="stat-val" id="res-congruent"></span>
-      </div>
-      <div class="stat-row">
-        <span>冲突条件 · 平均反应时间</span>
-        <span class="stat-val" id="res-incongruent"></span>
-      </div>
-
-      <div class="highlight-box" id="stroop-effect-box">
-        <p id="stroop-effect-text"></p>
-      </div>
-    </div>
-
-    <button class="btn btn-primary" style="margin-top:24px;" onclick="startGame()">再测一次</button>
+    <h2 class="ranking-title">🏆 最终排名</h2>
+    <p class="ranking-sub" id="ranking-sub"></p>
+    <div class="rank-list" id="rank-list"></div>
+    <button class="btn btn-primary" style="margin-top:28px;font-size:1.15rem;padding:16px 40px;" onclick="backToSetup()">返回大厅</button>
   </div>
 
 </div>
 
 <script>
-// ==================== 游戏逻辑 ====================
+// ==================== 常量 ====================
+const COLORS = ['red','blue','green','yellow'];
+const COLOR_HEX = { red:'#e74c3c', blue:'#3498db', green:'#2ecc71', yellow:'#f1c40f' };
+const COLOR_NAMES = { red:'红色', blue:'蓝色', green:'绿色', yellow:'黄色' };
+const TEAM_DOTS = ['🔴','🔵','🟢','🟡'];
+const TEAM_COLORS = ['#e74c3c','#3498db','#2ecc71','#f1c40f'];
+const COOLDOWN_MS = 450;
 
-const COLORS = ['red', 'blue', 'green', 'yellow'];
-const COLOR_HEX = {
-  red:    '#e74c3c',
-  blue:   '#3498db',
-  green:  '#2ecc71',
-  yellow: '#f1c40f'
-};
-const COLOR_NAMES_CN = {
-  red: '红色', blue: '蓝色', green: '绿色', yellow: '黄色'
-};
+// ==================== 音效（Web Audio API） ====================
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playSound(freq, type, duration, vol = .15) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + duration);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+function sfxCorrect() { playSound(880, 'sine', .15, .12); setTimeout(()=>playSound(1100,'sine',.12,.08),120); }
+function sfxWrong()   { playSound(120, 'square', .25, .06); }
+function sfxEnd()     { playSound(440, 'triangle', .3, .1); setTimeout(()=>playSound(660,'triangle',.3,.1),150); setTimeout(()=>playSound(880,'triangle',.5,.2),300); }
 
-const TOTAL_ROUNDS = 30;
+// ==================== 状态 ====================
+let numTeams     = 2;
+let totalSeconds = 60;
+let teams        = [];    // [{name, score}]
+let currentTeam  = 0;
+let trials       = [];
+let trialIndex   = 0;
+let timeLeft     = 0;
+let timerHandle  = null;
+let cooldown     = false;
+let paused       = false;
+let gameActive   = false;
 
-let trials        = [];   // [{word, color, congruent}]
-let currentIndex  = 0;
-let results       = [];   // [{word, color, answer, correct, rt}]
-let trialStart    = 0;
-let gameActive    = false;
+// ==================== 设置页逻辑 ====================
+document.getElementById('group-select').addEventListener('click', e => {
+  const opt = e.target.closest('.group-option');
+  if (!opt) return;
+  document.querySelectorAll('.group-option').forEach(o=>o.classList.remove('selected'));
+  opt.classList.add('selected');
+  numTeams = parseInt(opt.dataset.groups);
+});
+document.getElementById('timer-select').addEventListener('click', e => {
+  const opt = e.target.closest('.time-option');
+  if (!opt) return;
+  document.querySelectorAll('.time-option').forEach(o=>o.classList.remove('selected'));
+  opt.classList.add('selected');
+  totalSeconds = parseInt(opt.dataset.seconds);
+});
 
-// ---------- 生成试次序列 ----------
-function generateTrials(n) {
+function resetSetup() {
+  document.querySelector('#group-select .group-option[data-groups="2"]').classList.add('selected');
+  document.querySelectorAll('#group-select .group-option').forEach(o=>{
+    if (o.dataset.groups!='2') o.classList.remove('selected');
+  });
+  document.querySelector('#timer-select .time-option[data-seconds="60"]').classList.add('selected');
+  document.querySelectorAll('#timer-select .time-option').forEach(o=>{
+    if (o.dataset.seconds!='60') o.classList.remove('selected');
+  });
+  numTeams = 2; totalSeconds = 60;
+}
+
+function showScreen(id) {
+  ['screen-setup','screen-game','screen-results'].forEach(s=>document.getElementById(s).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ==================== 生成公平试次 ====================
+function generateFairTrials(n) {
+  // 确保每个队伍遇到的一致/冲突试次比例相同
   const list = [];
-  for (let i = 0; i < n; i++) {
-    const word  = COLORS[Math.floor(Math.random() * COLORS.length)];
-    let color;
-    if (Math.random() < 0.5) {
-      // 一致条件
-      color = word;
-    } else {
-      // 冲突条件：随机其他颜色
-      const others = COLORS.filter(c => c !== word);
-      color = others[Math.floor(Math.random() * others.length)];
-    }
-    list.push({ word, color, congruent: word === color });
+  const perTeam = Math.ceil(n / numTeams) * numTeams; // 对齐队伍数
+  const half = perTeam / 2;
+
+  // 一半一致，一半冲突，随机穿插
+  for (let i = 0; i < half; i++) {
+    const word = COLORS[Math.floor(Math.random() * COLORS.length)];
+    list.push({ word, color: word, congruent: true });
+  }
+  for (let i = 0; i < half; i++) {
+    const word = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const others = COLORS.filter(c => c !== word);
+    const color = others[Math.floor(Math.random() * others.length)];
+    list.push({ word, color, congruent: false });
+  }
+  // Fisher-Yates shuffle
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
   }
   return list;
 }
 
-// ---------- 界面切换 ----------
-function showScreen(id) {
-  document.getElementById('screen-welcome').classList.add('hidden');
-  document.getElementById('screen-game').classList.add('hidden');
-  document.getElementById('screen-results').classList.add('hidden');
-  document.getElementById(id).classList.remove('hidden');
-}
-
-// ---------- 开始游戏 ----------
+// ==================== 开始游戏 ====================
 function startGame() {
-  trials       = generateTrials(TOTAL_ROUNDS);
-  currentIndex = 0;
-  results      = [];
-  gameActive   = true;
+  // 初始化队伍
+  teams = [];
+  for (let i = 0; i < numTeams; i++) {
+    teams.push({ name: `第 ${i+1} 组`, score: 0 });
+  }
+  currentTeam = 0;
+  trialIndex  = 0;
+  timeLeft    = totalSeconds;
+  cooldown    = false;
+  paused      = false;
+  gameActive  = true;
+
+  // 生成试次（预估足够：按每秒1题）
+  trials = generateFairTrials(Math.max(totalSeconds * 2, 60));
 
   showScreen('screen-game');
-  document.getElementById('total-rounds-display').textContent = TOTAL_ROUNDS;
+  renderScoreboard();
+  updateTimer();
+  updateTeamIndicator();
   showTrial();
+
+  // 启动倒计时
+  timerHandle = setInterval(() => {
+    if (paused) return;
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) endGame();
+  }, 1000);
 }
 
-// ---------- 渲染按钮（随机排列） ----------
+// ==================== 显示试次 ====================
+function showTrial() {
+  if (trialIndex >= trials.length) {
+    trials = generateFairTrials(Math.max(timeLeft * 2 + 10, 20));
+    trialIndex = 0;
+  }
+  const t = trials[trialIndex];
+  const el = document.getElementById('stimulus');
+  el.textContent = COLOR_NAMES[t.word];
+  el.style.color = COLOR_HEX[t.color];
+
+  renderButtons();
+  cooldown = false;
+  document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('locked'));
+}
+
 function renderButtons() {
   const container = document.getElementById('color-buttons');
-  const shuffled  = [...COLORS].sort(() => Math.random() - 0.5);
+  const shuffled = [...COLORS].sort(()=>Math.random()-.5);
   container.innerHTML = shuffled.map(c =>
-    `<button class="color-btn" onclick="answer('${c}')">${COLOR_NAMES_CN[c]}</button>`
+    `<button class="color-btn" onclick="answer('${c}')">${COLOR_NAMES[c]}</button>`
   ).join('');
 }
 
-// ---------- 显示当前试次 ----------
-function showTrial() {
-  if (currentIndex >= trials.length) {
-    endGame();
-    return;
-  }
-
-  const t = trials[currentIndex];
-  const el = document.getElementById('stimulus');
-  el.textContent = COLOR_NAMES_CN[t.word];
-  el.style.color = COLOR_HEX[t.color];
-
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('feedback').className = 'feedback';
-
-  // 进度条
-  const pct = (currentIndex / TOTAL_ROUNDS) * 100;
-  document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('progress-text').textContent =
-    `第 ${currentIndex + 1} / ${TOTAL_ROUNDS} 轮`;
-
-  renderButtons();
-  trialStart = performance.now();
-}
-
-// ---------- 作答 ----------
+// ==================== 答题 ====================
 function answer(userColor) {
-  if (!gameActive) return;
+  if (!gameActive || cooldown || paused) return;
+  cooldown = true;
 
-  const rt    = performance.now() - trialStart;
-  const trial = trials[currentIndex];
+  // 锁定按钮
+  document.querySelectorAll('.color-btn').forEach(b => b.classList.add('locked'));
+
+  const trial = trials[trialIndex];
   const correct = (userColor === trial.color);
 
-  results.push({
-    word:      trial.word,
-    color:     trial.color,
-    answer:    userColor,
-    correct:   correct,
-    congruent: trial.congruent,
-    rt:        rt
-  });
-
-  // 反馈
-  const fb = document.getElementById('feedback');
   if (correct) {
-    fb.textContent = '✓ 正确';
-    fb.className = 'feedback correct';
+    teams[currentTeam].score++;
+    renderScoreboard();
+    flashScreen('correct');
+    showBigFeedback('✓', 'correct');
+    sfxCorrect();
   } else {
-    fb.textContent = `✗ 错误（词义：${COLOR_NAMES_CN[trial.word]}，颜色：${COLOR_NAMES_CN[trial.color]}）`;
-    fb.className = 'feedback wrong';
+    flashScreen('wrong');
+    showBigFeedback('✗', 'wrong');
+    sfxWrong();
   }
 
-  currentIndex++;
-  gameActive = false;
+  trialIndex++;
 
-  // 短暂延迟后下一题
+  // 切换队伍
+  currentTeam = (currentTeam + 1) % numTeams;
+  updateTeamIndicator();
+
+  // 冷却后下一题
   setTimeout(() => {
-    gameActive = true;
-    showTrial();
-  }, 400);
+    if (gameActive && !paused) showTrial();
+  }, COOLDOWN_MS);
 }
 
-// ---------- 结束游戏 ----------
-function endGame() {
+// ==================== 视觉反馈 ====================
+function flashScreen(type) {
+  const el = document.getElementById('flash');
+  el.classList.add(type);
+  if (type==='wrong') document.body.classList.add('shake');
+  setTimeout(() => {
+    el.classList.remove(type);
+    document.body.classList.remove('shake');
+  }, 350);
+}
+
+function showBigFeedback(symbol, type) {
+  const el = document.getElementById('big-fb');
+  el.textContent = symbol;
+  el.className = 'big-feedback ' + type + ' show';
+  setTimeout(() => { el.className = 'big-feedback ' + type; }, 300);
+}
+
+// ==================== UI 更新 ====================
+function updateTimer() {
+  const el = document.getElementById('timer');
+  el.textContent = timeLeft;
+  el.classList.toggle('warning', timeLeft <= 10);
+}
+
+function updateTeamIndicator() {
+  const el = document.getElementById('team-indicator');
+  el.innerHTML = `${TEAM_DOTS[currentTeam]} <span style="color:${TEAM_COLORS[currentTeam]}">${teams[currentTeam].name}</span> 答题`;
+  renderScoreboard();
+}
+
+function renderScoreboard() {
+  const container = document.getElementById('scoreboard');
+  container.innerHTML = teams.map((t, i) => `
+    <div class="score-item${i===currentTeam?' active':''}">
+      <div class="team-name">${TEAM_DOTS[i]} ${t.name}</div>
+      <div class="team-score" style="color:${TEAM_COLORS[i]}">${t.score}</div>
+    </div>
+  `).join('');
+}
+
+// ==================== 暂停/恢复 ====================
+function pauseGame() {
+  if (!gameActive || timeLeft <= 0) return;
+  paused = true;
+  document.getElementById('pause-time').textContent = timeLeft + ' 秒';
+  document.getElementById('pause-overlay').classList.remove('hidden');
+}
+
+function resumeGame() {
+  paused = false;
+  document.getElementById('pause-overlay').classList.add('hidden');
+}
+
+function abortGame() {
+  clearInterval(timerHandle);
   gameActive = false;
+  paused = false;
+  document.getElementById('pause-overlay').classList.add('hidden');
+  backToSetup();
+}
 
-  const total        = results.length;
-  const correctCount = results.filter(r => r.correct).length;
-  const accuracy     = total > 0 ? (correctCount / total * 100) : 0;
-  const avgRT        = total > 0 ? results.reduce((s, r) => s + r.rt, 0) / total : 0;
-  const fastest      = total > 0 ? Math.min(...results.map(r => r.rt)) : 0;
-
-  const congruentTrials     = results.filter(r => r.congruent && r.correct);
-  const incongruentTrials   = results.filter(r => !r.congruent && r.correct);
-  const avgCongruent        = congruentTrials.length   > 0 ? congruentTrials.reduce((s,r)=>s+r.rt,0)   / congruentTrials.length   : 0;
-  const avgIncongruent      = incongruentTrials.length > 0 ? incongruentTrials.reduce((s,r)=>s+r.rt,0) / incongruentTrials.length : 0;
-
-  const rtDiff = avgIncongruent - avgCongruent;
-  const rtDiffPct = avgCongruent > 0 ? (rtDiff / avgCongruent * 100) : 0;
-
-  document.getElementById('res-total').textContent        = `${total}（正确 ${correctCount} 次）`;
-  document.getElementById('res-accuracy').textContent     = accuracy.toFixed(1) + '%';
-  document.getElementById('res-avg-rt').textContent       = avgRT.toFixed(0) + ' ms';
-  document.getElementById('res-fastest').textContent      = fastest.toFixed(0) + ' ms';
-  document.getElementById('res-congruent').textContent    = avgCongruent.toFixed(0) + ' ms';
-  document.getElementById('res-incongruent').textContent  = avgIncongruent.toFixed(0) + ' ms';
-
-  // 斯特鲁普效应解读
-  const box = document.getElementById('stroop-effect-text');
-  if (congruentTrials.length > 0 && incongruentTrials.length > 0 && rtDiff > 0) {
-    box.innerHTML =
-      `在冲突条件下，你的反应比一致条件慢了 <strong>${rtDiff.toFixed(0)} ms</strong>（约 ${rtDiffPct.toFixed(0)}%）。<br><br>
-      这就是经典的<strong>斯特鲁普效应</strong>：当词义与颜色不一致时，大脑需要额外的认知资源去抑制自动化的阅读反应，导致反应变慢。`;
-  } else if (rtDiff <= 0 && congruentTrials.length > 0 && incongruentTrials.length > 0) {
-    box.innerHTML =
-      `这次实验中冲突条件的反应时间并未明显更慢。这可能是因为你进行了充分的练习，或者样本量较小。斯特鲁普效应通常在更多试次下会稳定显现。`;
-  } else {
-    box.innerHTML =
-      `需要更多有效数据来观察斯特鲁普效应。建议再测一次，尽量又快又准地作答。`;
+// ==================== 键盘 ====================
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (paused) resumeGame();
+    else if (gameActive) pauseGame();
   }
+});
+
+// ==================== 结束游戏 ====================
+function endGame() {
+  clearInterval(timerHandle);
+  gameActive = false;
+  cooldown = true;
+
+  sfxEnd();
+
+  // 排名
+  const ranked = [...teams].sort((a,b)=>b.score-a.score);
+
+  document.getElementById('ranking-sub').textContent =
+    `共 ${numTeams} 组 · ${totalSeconds} 秒倒计时`;
+
+  const rankList = document.getElementById('rank-list');
+  const crowns = ['🥇','🥈','🥉','🏅'];
+  rankList.innerHTML = ranked.map((t, i) => `
+    <div class="rank-row">
+      <div class="rank-num">${crowns[i]||''}</div>
+      <div class="rank-name">
+        <span style="color:${TEAM_COLORS[teams.indexOf(t)]}">${TEAM_DOTS[teams.indexOf(t)]}</span>
+        ${t.name}
+      </div>
+      <div class="rank-score">${t.score} 分</div>
+    </div>
+  `).join('');
 
   showScreen('screen-results');
 }
 
-// ---------- 初始化 ----------
-showScreen('screen-welcome');
+function backToSetup() {
+  clearInterval(timerHandle);
+  gameActive = false;
+  paused = false;
+  cooldown = false;
+  showScreen('screen-setup');
+}
+
+// ==================== 初始化 ====================
+showScreen('screen-setup');
 </script>
 </body>
 </html>
