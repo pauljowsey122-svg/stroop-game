@@ -110,6 +110,16 @@
   .timer-display.warning{color:#e74c3c;animation:pulse .6s ease infinite alternate}
   @keyframes pulse{to{opacity:.4}}
 
+  /* 左下角暂停按钮 */
+  .pause-btn{
+    position:fixed;bottom:20px;left:20px;z-index:500;
+    width:48px;height:48px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.12);background:rgba(0,0,0,.5);
+    color:#777;font-size:1.1rem;cursor:pointer;
+    transition:all .15s;backdrop-filter:blur(6px);
+  }
+  .pause-btn:hover{border-color:#fff;color:#fff;background:rgba(0,0,0,.7)}
+
   /* ========== 侧边计分板 ========== */
   .score-panel{
     position:fixed;right:12px;top:50%;transform:translateY(-50%);
@@ -316,7 +326,6 @@
     <div class="top-bar">
       <div class="team-indicator" id="team-indicator">🔴 第 1 组 回合</div>
       <div class="timer-display" id="timer-display">90</div>
-      <div style="font-size:.75rem;color:var(--sub)">Esc</div>
     </div>
 
     <!-- 奖金池 -->
@@ -331,6 +340,9 @@
     <!-- 底部操作 -->
     <div class="action-area">
       <button class="btn-cashout" id="btn-cashout" disabled onclick="cashOut()">
+
+        <!-- 左下角暂停 -->
+        <button class="pause-btn" onclick="pauseGame()" title="暂停 (Esc)">⏸</button>
         🏦 见好就收（存入总分 · 换下一组）
       </button>
     </div>
