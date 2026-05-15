@@ -105,7 +105,7 @@
 
   /* ============ 游戏页 · 顶部栏 ============ */
   .top-bar {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: center;
     margin-bottom: 16px;
   }
   .timer {
@@ -116,13 +116,15 @@
   .timer.warning { color: #e74c3c; animation: pulse .6s ease infinite alternate; }
   @keyframes pulse { to { opacity: .5; } }
 
-  .pause-btn {
-    width: 48px; height: 48px; border-radius: 50%;
-    border: 2px solid rgba(255,255,255,.15); background: transparent;
-    color: #888; font-size: 1.2rem; cursor: pointer;
-    transition: all .15s;
-  }
-  .pause-btn:hover { border-color: #fff; color: #fff; }
+      .pause-btn {
+        position: fixed; bottom: 24px; left: 24px; z-index: 500;
+        width: 52px; height: 52px; border-radius: 50%;
+        border: 2px solid rgba(255,255,255,.12); background: rgba(0,0,0,.5);
+        color: #777; font-size: 1.2rem; cursor: pointer;
+        transition: all .15s;
+        backdrop-filter: blur(6px);
+      }
+      .pause-btn:hover { border-color: #fff; color: #fff; background: rgba(0,0,0,.7); }
 
   /* ============ 队伍提示 ============ */
   .team-indicator {
@@ -294,12 +296,10 @@
   <!-- ==================== 游戏页 ==================== -->
   <div id="screen-game" class="card hidden">
 
-    <!-- 顶部：计时 + 暂停 -->
-    <div class="top-bar">
-      <div style="width:48px;"></div>
-      <div class="timer" id="timer">60</div>
-      <button class="pause-btn" onclick="pauseGame()" title="暂停 (Esc)">⏸</button>
-    </div>
+        <!-- 顶部：计时 -->
+        <div class="top-bar">
+          <div class="timer" id="timer">60</div>
+        </div>
 
     <!-- 当前队伍 -->
     <div class="team-indicator" id="team-indicator">🔴 第 1 组 答题</div>
@@ -312,6 +312,9 @@
 
     <!-- 计分板 -->
     <div class="scoreboard" id="scoreboard"></div>
+
+        <!-- 左下角暂停按钮 -->
+        <button class="pause-btn" onclick="pauseGame()" title="暂停 (Esc / P)">⏸</button>
   </div>
 
   <!-- ==================== 结算页 ==================== -->
