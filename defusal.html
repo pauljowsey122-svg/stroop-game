@@ -113,10 +113,11 @@
   /* 左下角暂停按钮 */
   .pause-btn{
     position:fixed;bottom:20px;left:20px;z-index:500;
-    width:48px;height:48px;border-radius:50%;
-    border:2px solid rgba(255,255,255,.12);background:rgba(0,0,0,.5);
-    color:#777;font-size:1.1rem;cursor:pointer;
+    padding:10px 18px;border-radius:14px;
+    border:2px solid rgba(255,255,255,.12);background:rgba(0,0,0,.45);
+    color:#999;font-size:.9rem;font-weight:700;cursor:pointer;
     transition:all .15s;backdrop-filter:blur(6px);
+    display:flex;align-items:center;gap:6px;letter-spacing:.03em;
   }
   .pause-btn:hover{border-color:#fff;color:#fff;background:rgba(0,0,0,.7)}
 
@@ -342,7 +343,7 @@
       <button class="btn-cashout" id="btn-cashout" disabled onclick="cashOut()">
 
         <!-- 左下角暂停 -->
-        <button class="pause-btn" onclick="pauseGame()" title="暂停 (Esc)">⏸</button>
+        <button class="pause-btn" onclick="pauseGame()">⏸ 暂停菜单 (Esc)</button>
         🏦 见好就收（存入总分 · 换下一组）
       </button>
     </div>
