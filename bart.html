@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BART 气球冒险 · 车轮战</title>
+<style>
+  :root {
+    --red:    #e74c3c;
+    --blue:   #3498db;
+    --green:  #2ecc71;
+    --yellow: #f1c40f;
+    --bg:     #0a0a1a;
+    --card:   #12122a;
+    --text:   #eee;
+    --sub:    #999;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex; justify-content: center; align-items: center;
+    padding: 16px;
+    user-select: none; -webkit-user-select: none;
+    overflow: hidden;
+  }
+  .container { width: 100%; max-width: 900px; text-align: center; position: relative; }
+
+  .hidden { display: none !important; }
+  .card {
+    background: var(--card); border-radius: 28px;
+    padding: 36px 32px; box-shadow: 0 8px 48px rgba(0,0,0,.5);
+    position: relative;
+  }
+
+  /* ============ 全局闪光 & 震动 ============ */
+  .flash-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 999;
+    opacity: 0; transition: opacity .2s;
+  }
+  .flash-overlay.red   { background: rgba(231,76,60,.35); opacity:1; }
+  .flash-overlay.green { background: rgba(46,204,113,.3);  opacity:1; }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    15%     { transform: translateX(-14px) translateY(4px); }
+    30%     { transform: translateX(14px) translateY(-4px); }
+    45%     { transform: translateX(-10px) translateY(-2px); }
+    60%     { transform: translateX(10px) translateY(2px); }
+    75%     { transform: translateX(-5px); }
+  }
+  .shake-hard { animation: shake .5s ease; }
+
+  /* ============ 设置页 ============ */
+  .setup-title { font-size: 2rem; margin-bottom: 6px; }
+  .setup-sub   { color: var(--sub); font-size: .95rem; margin-bottom: 32px; }
+  .setup-desc  { font-size: .9rem; color: var(--sub); line-height: 1.6; margin-bottom: 28px; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+  .group-select {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px;
+  }
+  .group-option {
+    width: 100px; height: 100px; border-radius: 20px;
+    border: 3px solid rgba(255,255,255,.1); background: #1a1a3a;
+    color: #ccc; font-size: 1.2rem; font-weight: 700;
+    cursor: pointer; transition: all .18s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  }
+  .group-option:hover { border-color: #e67e22; background: #222250; }
+  .group-option.selected { border-color: #e67e22; background: #2a2a1a; color: #fff; box-shadow: 0 0 24px rgba(230,126,34,.3); }
+  .group-option .icon { font-size: 2rem; }
+  .setup-buttons { display: flex; gap: 14px; justify-content: center; }
+
+  /* ============ 按钮通用 ============ */
+  .btn {
+    display: inline-block; padding: 14px 36px; border: none;
+    border-radius: 14px; font-size: 1.1rem; font-weight: 700;
+    cursor: pointer; transition: transform .12s; letter-spacing: .04em;
+  }
+  .btn:active { transform: scale(.95); }
+  .btn-primary { background: #e67e22; color: #fff; font-size: 1.2rem; padding: 16px 48px; }
+  .btn-primary:hover { box-shadow: 0 4px 20px rgba(230,126,34,.5); }
+
+  /* ============ 游戏顶部栏 ============ */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .team-indicator {
+    font-size: 1.4rem; font-weight: 800;
+    padding: 8px 20px; border-radius: 12px;
+    background: rgba(255,255,255,.05);
+  }
+
+  /* ============ 计分板（固定在左侧） ============ */
+  .score-panel {
+    position: fixed; left: 16px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 10px; z-index: 100;
+  }
+  .score-card {
+    background: rgba(20,20,40,.85); border-radius: 14px;
+    padding: 12px 16px; border: 2px solid rgba(255,255,255,.08);
+    backdrop-filter: blur(8px); min-width: 70px; text-align: center;
+    transition: all .3s;
+  }
+  .score-card.active { border-color: #e67e22; box-shadow: 0 0 18px rgba(230,126,34,.4); }
+  .score-card .name { font-size: .75rem; color: var(--sub); }
+  .score-card .pts  { font-size: 1.6rem; font-weight: 900; }
+  .score-card .pts.flash-up { animation: scorePop .4s ease; }
+  @keyframes scorePop {
+    0% { transform: scale(1); color: #fff; }
+    50% { transform: scale(1.5); color: #2ecc71; }
+    100% { transform: scale(1); }
+  }
+
+  /* 移动端计分板改为顶部横排 */
+  @media (max-width: 700px) {
+    .score-panel {
+      position: static; transform: none; flex-direction: row;
+      justify-content: center; margin-bottom: 12px;
+    }
+    .score-card { min-width: 55px; padding: 8px 10px; }
+    .score-card .pts { font-size: 1.2rem; }
+  }
+
+  /* ============ 中央气球区 ============ */
+  .balloon-area {
+    position: relative; height: 380px; display: flex;
+    align-items: center; justify-content: center;
+    margin: 8px 0 16px;
+  }
+
+  /* 气球的线 */
+  .balloon-string {
+    position: absolute; bottom: 20px; left: 50%;
+    width: 2px; height: 90px;
+    background: linear-gradient(to bottom, rgba(255,255,255,.3), rgba(255,255,255,.05));
+    transform: translateX(-50%);
+    transition: height .2s;
+  }
+
+  /* 气球主体 */
+  .balloon {
+    position: relative;
+    width: 160px; height: 200px;
+    background: radial-gradient(circle at 35% 30%, #ff6b6b 0%, #e74c3c 40%, #c0392b 100%);
+    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+    box-shadow:
+      inset -10px -10px 30px rgba(0,0,0,.25),
+      inset 10px 10px 30px rgba(255,255,255,.15),
+      0 0 40px rgba(231,76,60,.3);
+    transition: transform .18s cubic-bezier(.175,.885,.32,1.275),
+                box-shadow .3s;
+    cursor: default;
+  }
+
+  /* 气球底部小三角（结） */
+  .balloon::after {
+    content: ''; position: absolute;
+    bottom: -14px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 22px solid #c0392b;
+  }
+
+  /* 气球高光点 */
+  .balloon::before {
+    content: ''; position: absolute;
+    top: 38px; left: 42px;
+    width: 36px; height: 48px;
+    background: rgba(255,255,255,.25);
+    border-radius: 50%;
+    transform: rotate(-20deg);
+  }
+
+  /* 气球颜色变体 */
+  .balloon.team-0 { background: radial-gradient(circle at 35% 30%, #ff6b6b 0%, #e74c3c 40%, #c0392b 100%); }
+  .balloon.team-0::after { border-top-color: #c0392b; }
+  .balloon.team-1 { background: radial-gradient(circle at 35% 30%, #74b9ff 0%, #3498db 40%, #2471a3 100%); }
+  .balloon.team-1::after { border-top-color: #2471a3; }
+  .balloon.team-2 { background: radial-gradient(circle at 35% 30%, #55efc4 0%, #2ecc71 40%, #1e8449 100%); }
+  .balloon.team-2::after { border-top-color: #1e8449; }
+  .balloon.team-3 { background: radial-gradient(circle at 35% 30%, #ffeaa7 0%, #f1c40f 40%, #d4a90e 100%); }
+  .balloon.team-3::after { border-top-color: #d4a90e; }
+
+  /* 气球震颤动画 */
+  @keyframes tremor-light  { 0%,100%{transform:translate(0,0)} 25%{transform:translate(2px,-1px)} 50%{transform:translate(-2px,1px)} 75%{transform:translate(1px,0)} }
+  @keyframes tremor-medium { 0%,100%{transform:translate(0,0)} 25%{transform:translate(4px,-2px)} 50%{transform:translate(-4px,2px)} 75%{transform:translate(2px,-1px)} }
+  @keyframes tremor-heavy  { 0%,100%{transform:translate(0,0)} 16%{transform:translate(6px,-3px)} 33%{transform:translate(-6px,3px)} 50%{transform:translate(4px,-1px)} 66%{transform:translate(-4px,1px)} 83%{transform:translate(2px,0)} }
+  @keyframes tremor-extreme { 0%,100%{transform:translate(0,0)} 12%{transform:translate(8px,-4px)} 25%{transform:translate(-8px,4px)} 37%{transform:translate(6px,-2px)} 50%{transform:translate(-6px,2px)} 62%{transform:translate(4px,-3px)} 75%{transform:translate(-4px,3px)} 87%{transform:translate(2px,-1px)} }
+
+  .balloon.tremor-1 { animation: tremor-light .5s infinite; }
+  .balloon.tremor-2 { animation: tremor-medium .35s infinite; }
+  .balloon.tremor-3 { animation: tremor-heavy .25s infinite; }
+  .balloon.tremor-4 { animation: tremor-extreme .18s infinite; }
+
+  /* 气球爆炸 */
+  @keyframes explode {
+    0%   { transform: scale(1); opacity:1; }
+    30%  { transform: scale(1.6); opacity:1; }
+    100% { transform: scale(2.5); opacity:0; }
+  }
+  .balloon.exploding {
+    animation: explode .4s ease-out forwards;
+    box-shadow: 0 0 80px rgba(255,0,0,.8);
+  }
+
+  /* 爆炸碎片 */
+  .particle {
+    position: absolute; pointer-events: none; z-index: 200;
+    border-radius: 50%;
+    animation: particleFly .8s ease-out forwards;
+  }
+  @keyframes particleFly {
+    0%   { opacity:1; transform: translate(0,0) scale(1); }
+    100% { opacity:0; transform: translate(var(--dx), var(--dy)) scale(0); }
+  }
+
+  /* 奖金显示 */
+  .reward-display {
+    font-size: 2.5rem; font-weight: 900; color: #f1c40f;
+    text-shadow: 0 0 30px rgba(241,196,15,.5);
+    margin-bottom: 8px; min-height: 1.2em;
+  }
+
+  /* 爆炸文字 */
+  .boom-text {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0);
+    font-size: 5rem; font-weight: 900; pointer-events: none; z-index: 1000;
+    transition: transform .2s cubic-bezier(.175,.885,.32,1.275);
+    text-shadow: 0 0 60px currentColor;
+  }
+  .boom-text.show { transform: translate(-50%,-50%) scale(1); }
+  .boom-text.explode { color: #e74c3c; }
+  .boom-text.cashout { color: #2ecc71; }
+
+  /* 操作区 */
+  .action-area {
+    display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
+  }
+  .action-btn {
+    font-size: 1.6rem; font-weight: 900; padding: 24px 40px;
+    border-radius: 20px; border: none; cursor: pointer;
+    letter-spacing: .06em; transition: transform .1s, box-shadow .15s;
+    min-width: 180px;
+  }
+  .action-btn:active { transform: scale(.93); }
+  .action-btn.locked { pointer-events: none; opacity: .4; }
+
+  .btn-inflate {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: #fff; box-shadow: 0 6px 24px rgba(231,76,60,.4);
+  }
+  .btn-inflate:hover { box-shadow: 0 6px 32px rgba(231,76,60,.7); }
+  .btn-cashout {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: #fff; box-shadow: 0 6px 24px rgba(46,204,113,.4);
+  }
+  .btn-cashout:hover { box-shadow: 0 6px 32px rgba(46,204,113,.7); }
+
+  .key-hint { font-size: .8rem; color: var(--sub); margin-top: 8px; }
+
+  /* ============ 暂停遮罩 ============ */
+  .pause-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.78);
+    display: flex; align-items: center; justify-content: center; z-index: 2000;
+  }
+  .pause-card {
+    background: var(--card); border-radius: 24px;
+    padding: 40px 48px; text-align: center;
+    box-shadow: 0 8px 48px rgba(0,0,0,.6);
+  }
+  .pause-card h2 { font-size: 1.8rem; margin-bottom: 12px; }
+  .pause-card .btn { margin: 6px; min-width: 120px; }
+  .btn-danger { background: #e74c3c; color: #fff; }
+
+  /* ============ 结果页 ============ */
+  .rank-list { text-align: left; }
+  .rank-row {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px 20px; border-radius: 16px; margin-bottom: 10px;
+    background: #1a1a3a; border: 2px solid rgba(255,255,255,.06);
+  }
+  .rank-row:nth-child(1) { border-color: #f1c40f; background: #2a2810; }
+  .rank-row:nth-child(2) { border-color: #aaa; }
+  .rank-row:nth-child(3) { border-color: #cd7f32; }
+  .rank-num { font-size: 2rem; font-weight: 900; min-width: 50px; text-align: center; }
+  .rank-name { flex:1; font-size: 1.2rem; font-weight: 700; }
+  .rank-score { font-size: 1.6rem; font-weight: 900; color: #e67e22; }
+
+  /* ============ 响应式 ============ */
+  @media (max-width: 600px) {
+    .card { padding: 20px 14px; }
+    .balloon { width: 120px; height: 150px; }
+    .balloon-area { height: 280px; }
+    .action-btn { font-size: 1.2rem; padding: 18px 24px; min-width: 130px; }
+    .action-area { gap: 12px; }
+    .reward-display { font-size: 1.8rem; }
+    .team-indicator { font-size: 1.1rem; }
+    .boom-text { font-size: 3rem; }
+    .score-panel { position: static; flex-direction: row; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 全局闪光 -->
+<div class="flash-overlay" id="flash"></div>
+
+<!-- 大反馈字 -->
+<div class="boom-text" id="boom-text"></div>
+
+<!-- 暂停遮罩 -->
+<div class="pause-overlay hidden" id="pause-overlay">
+  <div class="pause-card">
+    <h2>⏸ 教师控制台</h2>
+    <p style="color:var(--sub);margin-bottom:16px;">当前：<span id="pause-team"></span></p>
+    <button class="btn btn-primary" onclick="resumeGame()">继续游戏</button>
+    <button class="btn" style="background:#e67e22;color:#fff;" onclick="skipTeam()">跳过当前组</button>
+    <button class="btn btn-danger" onclick="endGameEarly()">结束游戏 · 查看排行榜</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ==================== 设置页 ==================== -->
+  <div id="screen-setup" class="card">
+    <h1 class="setup-title">🎈 气球冒险任务 (BART)</h1>
+    <p class="setup-sub">Balloon Analogue Risk Task · 车轮战</p>
+
+    <div class="setup-desc">
+      <p>💡 <strong>规则：</strong>每轮各组派一人上台操作一个气球。</p>
+      <p>🔴 点击 <strong>「充气」</strong>：奖金增加，但气球可能<strong>爆炸</strong>（奖金归零）</p>
+      <p>🟢 点击 <strong>「收手」</strong>：将当前奖金安全存入总分</p>
+      <p>🎮 键盘快捷键：<strong>空格键</strong> 充气 · <strong>回车键</strong> 收手</p>
+    </div>
+
+    <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;">选择队伍数量</p>
+    <div class="group-select" id="group-select">
+      <div class="group-option selected" data-groups="2">
+        <span class="icon">🔴🔵</span><span>2 组</span>
+      </div>
+      <div class="group-option" data-groups="3">
+        <span class="icon">🔴🔵🟢</span><span>3 组</span>
+      </div>
+      <div class="group-option" data-groups="4">
+        <span class="icon">🔴🔵🟢🟡</span><span>4 组</span>
+      </div>
+    </div>
+
+    <div class="setup-buttons">
+      <button class="btn btn-primary" onclick="startGame()">确认开始</button>
+      <button class="btn" style="background:#333;color:#aaa;" onclick="resetSetup()">重置</button>
+    </div>
+  </div>
+
+  <!-- ==================== 游戏页 ==================== -->
+  <div id="screen-game" class="card hidden">
+
+    <!-- 顶部 -->
+    <div class="top-bar">
+      <div class="team-indicator" id="team-indicator">🔴 第 1 组 回合</div>
+      <div style="font-size:.85rem;color:var(--sub);">Esc 菜单</div>
+    </div>
+
+    <!-- 奖金显示 -->
+    <div class="reward-display" id="reward-display">💰 0</div>
+
+    <!-- 气球区 -->
+    <div class="balloon-area" id="balloon-area">
+      <div class="balloon-string" id="balloon-string"></div>
+      <div class="balloon" id="balloon"></div>
+    </div>
+
+    <!-- 操作区 -->
+    <div class="action-area" id="action-area">
+      <button class="action-btn btn-inflate" id="btn-inflate" onclick="inflate()">
+        💨 充气
+      </button>
+      <button class="action-btn btn-cashout" id="btn-cashout" onclick="cashOut()">
+        💰 收手
+      </button>
+    </div>
+    <div class="key-hint">Space = 充气 &nbsp;|&nbsp; Enter = 收手</div>
+  </div>
+
+  <!-- ==================== 结算页 ==================== -->
+  <div id="screen-results" class="card hidden">
+    <h2 style="font-size:2rem;margin-bottom:6px;">🏆 最终排名</h2>
+    <p style="color:var(--sub);margin-bottom:24px;">气球冒险任务 · 车队战结果</p>
+    <div class="rank-list" id="rank-list"></div>
+    <button class="btn btn-primary" style="margin-top:28px;" onclick="backToSetup()">返回大厅</button>
+  </div>
+
+</div>
+
+<!-- 计分板（左侧固定） -->
+<div class="score-panel hidden" id="score-panel"></div>
+
+<script>
+// ==================== 音效 ====================
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function beep(freq, type, dur, vol=.12, delay=0) {
+  try {
+    const ctx=getCtx(), o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(vol, ctx.currentTime+delay);
+    g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime+delay+dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(ctx.currentTime+delay); o.stop(ctx.currentTime+delay+dur);
+  }catch(e){}
+}
+function sfxPump()        { beep(600,'sine',.08,.08); }
+function sfxCashOut()     { beep(523,'triangle',.12,.1); setTimeout(()=>beep(659,'triangle',.12,.1),80); setTimeout(()=>beep(784,'triangle',.18,.15),160); }
+function sfxExplode()     { beep(60,'sawtooth',.5,.15); beep(40,'square',.4,.12,50); }
+function sfxWarningPump() { beep(200,'square',.15,.08); }
+
+// ==================== 状态 ====================
+const TEAM_DOTS   = ['🔴','🔵','🟢','🟡'];
+const TEAM_COLORS = ['#e74c3c','#3498db','#2ecc71','#f1c40f'];
+const PUMP_POINTS  = 10;
+const MIN_PUMPS    = 3;
+const MAX_PUMPS    = 15;
+const COOLDOWN_MS  = 150;
+const TURN_DELAY_MS = 2000;
+
+let numTeams    = 2;
+let teams       = [];      // [{name, score}]
+let currentTeam = 0;
+let pumpCount   = 0;
+let explodeAt   = 0;       // 爆炸阈值（充气次数）
+let gameActive  = false;
+let locked      = false;   // 冷却/过场锁定
+let paused      = false;
+
+// ==================== 设置页 ====================
+document.getElementById('group-select').addEventListener('click', e => {
+  const opt = e.target.closest('.group-option');
+  if (!opt) return;
+  document.querySelectorAll('.group-option').forEach(o=>o.classList.remove('selected'));
+  opt.classList.add('selected');
+  numTeams = parseInt(opt.dataset.groups);
+});
+function resetSetup() {
+  document.querySelector('#group-select .group-option[data-groups="2"]').classList.add('selected');
+  document.querySelectorAll('#group-select .group-option').forEach(o=>{
+    if (o.dataset.groups!='2') o.classList.remove('selected');
+  });
+  numTeams = 2;
+}
+function showScreen(id) {
+  ['screen-setup','screen-game','screen-results'].forEach(s=>document.getElementById(s).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ==================== 开始游戏 ====================
+function startGame() {
+  teams = [];
+  for (let i = 0; i < numTeams; i++) teams.push({ name: `第 ${i+1} 组`, score: 0 });
+  currentTeam = 0;
+  gameActive  = true;
+  locked      = false;
+  paused      = false;
+
+  showScreen('screen-game');
+  document.getElementById('score-panel').classList.remove('hidden');
+  renderScorePanel();
+  newBalloon();
+}
+
+// ==================== 新气球 ====================
+function newBalloon() {
+  pumpCount = 0;
+  explodeAt = MIN_PUMPS + Math.floor(Math.random() * (MAX_PUMPS - MIN_PUMPS + 1));
+
+  const b = document.getElementById('balloon');
+  b.classList.remove('exploding', 'tremor-1', 'tremor-2', 'tremor-3', 'tremor-4');
+  b.className = 'balloon team-' + currentTeam;
+  b.style.transform = 'scale(.55)';
+  b.style.opacity = '1';
+  b.style.boxShadow = '';
+
+  document.getElementById('reward-display').textContent = '💰 0';
+  updateTeamUI();
+  setLocked(false);
+}
+
+// ==================== 操作 ====================
+function inflate() {
+  if (!gameActive || locked || paused) return;
+  setLocked(true);
+
+  pumpCount++;
+  const reward = pumpCount * PUMP_POINTS;
+  document.getElementById('reward-display').textContent = '💰 ' + reward;
+
+  // 气球变大
+  const scale = 0.55 + (pumpCount / MAX_PUMPS) * 1.0;
+  const b = document.getElementById('balloon');
+  b.style.transform = `scale(${scale})`;
+
+  // 震颤递增
+  b.classList.remove('tremor-1','tremor-2','tremor-3','tremor-4');
+  const riskRatio = pumpCount / MAX_PUMPS;
+  if      (riskRatio > 0.75) { b.classList.add('tremor-4'); sfxWarningPump(); }
+  else if (riskRatio > 0.55) { b.classList.add('tremor-3'); sfxPump(); }
+  else if (riskRatio > 0.35) { b.classList.add('tremor-2'); sfxPump(); }
+  else if (riskRatio > 0.15) { b.classList.add('tremor-1'); sfxPump(); }
+  else { sfxPump(); }
+
+  // 盒型阴影随放大增强
+  b.style.boxShadow = `inset -10px -10px 30px rgba(0,0,0,.25), inset 10px 10px 30px rgba(255,255,255,.15), 0 0 ${20+pumpCount*6}px rgba(231,76,60,${.2+pumpCount*.04})`;
+
+  // 检查爆炸
+  if (pumpCount >= explodeAt) {
+    explodeBalloon();
+    return;
+  }
+
+  setTimeout(() => setLocked(false), COOLDOWN_MS);
+}
+
+function cashOut() {
+  if (!gameActive || locked || paused) return;
+  setLocked(true);
+
+  const reward = pumpCount * PUMP_POINTS;
+  teams[currentTeam].score += reward;
+  sfxCashOut();
+
+  // 绿色反馈
+  flashScreen('green');
+  showBoomText('💰 安全落袋！', 'cashout');
+  flashScore(currentTeam);
+
+  renderScorePanel();
+  nextTurn();
+}
+
+function explodeBalloon() {
+  sfxExplode();
+
+  const b = document.getElementById('balloon');
+  b.classList.add('exploding');
+
+  // 碎片粒子
+  spawnParticles();
+
+  // 红色反馈
+  flashScreen('red');
+  document.body.classList.add('shake-hard');
+  setTimeout(() => document.body.classList.remove('shake-hard'), 500);
+
+  const reward = pumpCount * PUMP_POINTS;
+  showBoomText(`💥 砰！${reward} 分归零`, 'explode');
+
+  nextTurn();
+}
+
+// ==================== 换组 ====================
+function nextTurn() {
+  setLocked(true);
+  setTimeout(() => {
+    currentTeam = (currentTeam + 1) % numTeams;
+    newBalloon();
+  }, TURN_DELAY_MS);
+}
+
+// ==================== 视觉反馈 ====================
+function flashScreen(type) {
+  const el = document.getElementById('flash');
+  el.classList.add(type);
+  setTimeout(() => el.classList.remove(type), 400);
+}
+function showBoomText(msg, cls) {
+  const el = document.getElementById('boom-text');
+  el.textContent = msg;
+  el.className = 'boom-text ' + cls + ' show';
+  setTimeout(() => { el.className = 'boom-text ' + cls; }, 800);
+}
+function flashScore(idx) {
+  const cards = document.querySelectorAll('.score-card .pts');
+  if (cards[idx]) { cards[idx].classList.add('flash-up'); setTimeout(()=>cards[idx].classList.remove('flash-up'),400); }
+}
+
+// 碎片粒子
+function spawnParticles() {
+  const area = document.getElementById('balloon-area');
+  const rect = area.getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2 - 30;
+  const colors = ['#e74c3c','#ff6b6b','#ff9a9a','#c0392b','#fff','#ffcdd2'];
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 6 + Math.random() * 14;
+    p.style.cssText = `
+      left:${cx}px; top:${cy}px; width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      --dx:${(Math.random()-.5)*300}px; --dy:${(Math.random()-.5)*300}px;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 800);
+  }
+}
+
+// ==================== UI ====================
+function updateTeamUI() {
+  const el = document.getElementById('team-indicator');
+  el.innerHTML = `${TEAM_DOTS[currentTeam]} <span style="color:${TEAM_COLORS[currentTeam]};font-weight:900;">${teams[currentTeam].name}</span> 回合`;
+  renderScorePanel();
+}
+
+function renderScorePanel() {
+  const panel = document.getElementById('score-panel');
+  panel.innerHTML = teams.map((t,i)=>`
+    <div class="score-card${i===currentTeam?' active':''}">
+      <div class="name">${TEAM_DOTS[i]} ${t.name}</div>
+      <div class="pts" style="color:${TEAM_COLORS[i]}">${t.score}</div>
+    </div>
+  `).join('');
+}
+
+function setLocked(v) {
+  locked = v;
+  document.getElementById('btn-inflate').classList.toggle('locked', v);
+  document.getElementById('btn-cashout').classList.toggle('locked', v);
+}
+
+// ==================== 键盘 ====================
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (paused) { resumeGame(); return; }
+    if (gameActive) pauseGame();
+    return;
+  }
+  if (!gameActive || locked || paused) return;
+  if (e.key === ' ' || e.code === 'Space') {
+    e.preventDefault();
+    inflate();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    cashOut();
+  }
+});
+
+// ==================== 教师控制台 ====================
+function pauseGame() {
+  if (!gameActive) return;
+  paused = true;
+  setLocked(true);
+  document.getElementById('pause-team').textContent =
+    `${TEAM_DOTS[currentTeam]} ${teams[currentTeam].name}`;
+  document.getElementById('pause-overlay').classList.remove('hidden');
+}
+function resumeGame() {
+  paused = false;
+  setLocked(false);
+  document.getElementById('pause-overlay').classList.add('hidden');
+}
+function skipTeam() {
+  document.getElementById('pause-overlay').classList.add('hidden');
+  paused = false;
+  currentTeam = (currentTeam + 1) % numTeams;
+  newBalloon();
+}
+function endGameEarly() {
+  document.getElementById('pause-overlay').classList.add('hidden');
+  paused = false;
+  gameActive = false;
+  setLocked(true);
+  document.getElementById('score-panel').classList.add('hidden');
+  showResults();
+}
+
+// ==================== 结算 ====================
+function showResults() {
+  const ranked = [...teams].sort((a,b)=>b.score-a.score);
+  const crowns = ['🥇','🥈','🥉','🏅'];
+  document.getElementById('rank-list').innerHTML = ranked.map((t,i) => `
+    <div class="rank-row">
+      <div class="rank-num">${crowns[i]||''}</div>
+      <div class="rank-name">
+        <span style="color:${TEAM_COLORS[teams.indexOf(t)]}">${TEAM_DOTS[teams.indexOf(t)]}</span>
+        ${t.name}
+      </div>
+      <div class="rank-score">${t.score} 分</div>
+    </div>
+  `).join('');
+  showScreen('screen-results');
+}
+function backToSetup() {
+  gameActive = false;
+  setLocked(true);
+  document.getElementById('score-panel').classList.add('hidden');
+  showScreen('screen-setup');
+}
+
+// ==================== 初始化 ====================
+showScreen('screen-setup');
+</script>
+</body>
+</html>
