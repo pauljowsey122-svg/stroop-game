@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>斯特鲁普效应 · 车轮战</title>
+<title>斯特鲁普效应 · 双模式</title>
 <style>
   :root {
     --red:    #e74c3c;
@@ -28,18 +28,14 @@
   }
   .container { width: 100%; max-width: 800px; text-align: center; }
 
-  /* ============ 卡片 ============ */
   .card {
-    background: var(--card);
-    border-radius: 24px;
-    padding: 40px 36px;
-    box-shadow: 0 8px 40px rgba(0,0,0,.4);
+    background: var(--card); border-radius: 24px;
+    padding: 40px 36px; box-shadow: 0 8px 40px rgba(0,0,0,.4);
     position: relative;
   }
-
   .hidden { display: none !important; }
 
-  /* ============ 全局反馈闪光 ============ */
+  /* ========== 全局反馈闪光 ========== */
   .flash-overlay {
     position: fixed; inset: 0; pointer-events: none; z-index: 999;
     opacity: 0; transition: opacity .15s;
@@ -47,7 +43,6 @@
   .flash-overlay.correct { background: rgba(46,204,113,.25); opacity:1; }
   .flash-overlay.wrong   { background: rgba(231,76,60,.3);  opacity:1; }
 
-  /* 屏幕震动 */
   @keyframes shake {
     0%,100% { transform: translateX(0); }
     20%     { transform: translateX(-12px); }
@@ -67,13 +62,31 @@
   .btn-primary { background: #667eea; color: #fff; }
   .btn-primary:hover { box-shadow: 0 4px 16px rgba(102,126,234,.5); }
 
-  /* ============ 设置页 ============ */
+  /* ============ 大厅：模式选择 ============ */
   .setup-title { font-size: 1.8rem; margin-bottom: 8px; }
-  .setup-sub   { color: var(--sub); font-size: .95rem; margin-bottom: 32px; }
+  .setup-sub   { color: var(--sub); font-size: .95rem; margin-bottom: 28px; }
 
-  .group-select {
-    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  .mode-select {
+    display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
     margin-bottom: 32px;
+  }
+  .mode-option {
+    padding: 28px 28px; border-radius: 20px;
+    border: 3px solid rgba(255,255,255,.1); background: #1e1e40;
+    color: #ccc; cursor: pointer; transition: all .18s;
+    text-align: center; min-width: 180px;
+  }
+  .mode-option:hover { border-color: #667eea; background: #252550; }
+  .mode-option.selected { border-color: #667eea; background: #2a2a5a; color: #fff; box-shadow: 0 0 28px rgba(102,126,234,.35); }
+  .mode-option .mode-icon { font-size: 2.4rem; display: block; margin-bottom: 10px; }
+  .mode-option .mode-title { font-size: 1.2rem; font-weight: 700; display: block; margin-bottom: 4px; }
+  .mode-option .mode-desc { font-size: .78rem; color: var(--sub); display: block; }
+
+  .setup-section { margin-bottom: 32px; }
+
+  .group-select, .timer-select, .qcount-select {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 8px;
   }
   .group-option {
     width: 100px; height: 100px; border-radius: 20px;
@@ -88,18 +101,14 @@
   .group-option .icon { font-size: 2rem; }
   .group-option .label { font-size: .85rem; color: var(--sub); }
 
-  .timer-select {
-    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
-    margin-bottom: 32px;
-  }
-  .time-option {
+  .time-option, .qcount-option {
     padding: 12px 24px; border-radius: 12px;
     border: 3px solid rgba(255,255,255,.1); background: #1e1e40;
     color: #ccc; font-size: 1.1rem; font-weight: 700;
     cursor: pointer; transition: all .18s;
   }
-  .time-option:hover { border-color: #667eea; }
-  .time-option.selected { border-color: #667eea; background: #2a2a5a; color: #fff; }
+  .time-option:hover, .qcount-option:hover { border-color: #667eea; }
+  .time-option.selected, .qcount-option.selected { border-color: #667eea; background: #2a2a5a; color: #fff; }
 
   .setup-buttons { display: flex; gap: 14px; justify-content: center; }
 
@@ -116,20 +125,22 @@
   .timer.warning { color: #e74c3c; animation: pulse .6s ease infinite alternate; }
   @keyframes pulse { to { opacity: .5; } }
 
-      .pause-btn {
-        position: fixed; bottom: 24px; left: 24px; z-index: 500;
-        width: 52px; height: 52px; border-radius: 50%;
-        border: 2px solid rgba(255,255,255,.12); background: rgba(0,0,0,.5);
-        color: #777; font-size: 1.2rem; cursor: pointer;
-        transition: all .15s;
-        backdrop-filter: blur(6px);
-      }
-      .pause-btn:hover { border-color: #fff; color: #fff; background: rgba(0,0,0,.7); }
+  .pause-btn {
+    position: fixed; bottom: 24px; left: 24px; z-index: 500;
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.12); background: rgba(0,0,0,.5);
+    color: #777; font-size: 1.2rem; cursor: pointer;
+    transition: all .15s; backdrop-filter: blur(6px);
+  }
+  .pause-btn:hover { border-color: #fff; color: #fff; background: rgba(0,0,0,.7); }
 
-  /* ============ 队伍提示 ============ */
+  /* ============ 队伍提示 / 单人进度 ============ */
   .team-indicator {
     font-size: 1.5rem; font-weight: 800; margin-bottom: 12px;
     transition: color .25s;
+  }
+  .solo-progress {
+    font-size: 1.2rem; font-weight: 700; color: var(--sub); margin-bottom: 12px;
   }
 
   /* ============ 刺激词 ============ */
@@ -183,12 +194,6 @@
   .score-item .team-name { font-size: .85rem; color: var(--sub); margin-bottom: 4px; }
   .score-item .team-score { font-size: 2rem; font-weight: 900; }
 
-  /* 队伍颜色点 */
-  .team-dot-A { color: #e74c3c; }
-  .team-dot-B { color: #3498db; }
-  .team-dot-C { color: #2ecc71; }
-  .team-dot-D { color: #f1c40f; }
-
   /* ============ 暂停遮罩 ============ */
   .pause-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.75);
@@ -204,10 +209,9 @@
   .pause-card .btn { margin: 8px; min-width: 120px; }
   .btn-danger { background: #e74c3c; color: #fff; }
 
-  /* ============ 结算页 ============ */
+  /* ============ 分组结算页 ============ */
   .ranking-title { font-size: 2.2rem; margin-bottom: 8px; }
   .ranking-sub   { color: var(--sub); margin-bottom: 28px; }
-
   .rank-list { text-align: left; }
   .rank-row {
     display: flex; align-items: center; gap: 16px;
@@ -217,12 +221,42 @@
   .rank-row:nth-child(1) { border-color: #f1c40f; background: #2a2810; }
   .rank-row:nth-child(2) { border-color: #aaa; background: #1e1e3a; }
   .rank-row:nth-child(3) { border-color: #cd7f32; background: #1e1820; }
-
   .rank-num { font-size: 2rem; font-weight: 900; min-width: 50px; text-align: center; }
   .rank-name { flex:1; font-size: 1.2rem; font-weight: 700; }
   .rank-score { font-size: 1.6rem; font-weight: 900; color: #667eea; }
 
-  .crown { font-size: 2.5rem; }
+  /* ============ 单人报告 ============ */
+  .report-title { font-size: 1.8rem; margin-bottom: 6px; }
+  .report-sub   { color: var(--sub); font-size: .9rem; margin-bottom: 24px; }
+
+  .stat-cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #1e1e40; border-radius: 16px; padding: 20px 16px;
+    border: 2px solid rgba(255,255,255,.08); text-align: center;
+  }
+  .stat-card .stat-val { font-size: 2.4rem; font-weight: 900; line-height: 1.2; }
+  .stat-card .stat-lbl { font-size: .82rem; color: var(--sub); margin-top: 4px; }
+  .stat-card .stat-sub { font-size: .78rem; color: var(--sub); margin-top: 2px; }
+
+  .highlight-card {
+    background: rgba(102,126,234,.1); border: 2px solid rgba(102,126,234,.25);
+    border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; text-align: center;
+  }
+  .highlight-card .hl-val { font-size: 2.6rem; font-weight: 900; color: #667eea; }
+  .highlight-card .hl-lbl { font-size: .85rem; color: var(--sub); margin: 4px 0 12px; }
+
+  .commentary-box {
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; text-align: left;
+  }
+  .commentary-box .commentary-icon { font-size: 1.6rem; display: block; margin-bottom: 6px; }
+  .commentary-box .commentary-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .commentary-box .commentary-text { font-size: .9rem; color: var(--sub); line-height: 1.6; }
+
+  .report-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
   /* ============ 响应式 ============ */
   @media (max-width: 600px) {
@@ -237,54 +271,81 @@
     .team-indicator { font-size: 1.1rem; }
     .group-option { width: 80px; height: 80px; }
     .big-feedback { font-size: 5rem; }
+    .mode-option { min-width: 140px; padding: 20px 16px; }
+    .stat-cards { grid-template-columns: 1fr 1fr; }
+    .stat-card .stat-val { font-size: 1.8rem; }
   }
 </style>
 </head>
 <body>
 
-<!-- 全局闪光层 -->
 <div class="flash-overlay" id="flash"></div>
-
-<!-- 中央大反馈 -->
 <div class="big-feedback" id="big-fb"></div>
 
 <!-- 暂停遮罩 -->
 <div class="pause-overlay hidden" id="pause-overlay">
   <div class="pause-card">
     <h2>⏸ 游戏暂停</h2>
-    <p style="color:var(--sub);margin-bottom:20px;">剩余时间：<span id="pause-time"></span></p>
+    <p style="color:var(--sub);margin-bottom:20px;" id="pause-hint"></p>
     <button class="btn btn-primary" onclick="resumeGame()">继续游戏</button>
-        <button class="btn" style="background:#e67e22;color:#fff;" onclick="restartRound()">重新开始本轮</button>
+    <button class="btn" style="background:#e67e22;color:#fff;" onclick="restartRound()">重新开始本轮</button>
     <button class="btn btn-danger"  onclick="abortGame()">结束游戏</button>
   </div>
 </div>
 
 <div class="container">
 
-  <!-- ==================== 设置页 ==================== -->
+  <!-- ==================== 大厅（设置页） ==================== -->
   <div id="screen-setup" class="card">
-    <h1 class="setup-title">🧠 斯特鲁普效应 · 车轮战</h1>
-    <p class="setup-sub">课堂互动实验 · 大屏抢答模式</p>
+    <h1 class="setup-title">🧠 斯特鲁普效应实验</h1>
+    <p class="setup-sub">Stroop Effect · 选择你的模式</p>
 
-    <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;">选择分组数量</p>
-    <div class="group-select" id="group-select">
-      <div class="group-option selected" data-groups="2">
-        <span class="icon">🔴🔵</span><span class="label">2 组</span>
+    <!-- 模式选择 -->
+    <div class="mode-select" id="mode-select">
+      <div class="mode-option selected" data-mode="group">
+        <span class="mode-icon">👥</span>
+        <span class="mode-title">全班分组竞技</span>
+        <span class="mode-desc">车轮战 · 倒计时对抗</span>
       </div>
-      <div class="group-option" data-groups="3">
-        <span class="icon">🔴🔵🟢</span><span class="label">3 组</span>
-      </div>
-      <div class="group-option" data-groups="4">
-        <span class="icon">🔴🔵🟢🟡</span><span class="label">4 组</span>
+      <div class="mode-option" data-mode="solo">
+        <span class="mode-icon">🧑</span>
+        <span class="mode-title">单人专注力挑战</span>
+        <span class="mode-desc">个人测验 · 数据报告</span>
       </div>
     </div>
 
-    <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;">倒计时时长</p>
-    <div class="timer-select" id="timer-select">
-      <div class="time-option" data-seconds="30">30 秒</div>
-      <div class="time-option selected" data-seconds="60">60 秒</div>
-      <div class="time-option" data-seconds="90">90 秒</div>
-      <div class="time-option" data-seconds="120">120 秒</div>
+    <!-- 分组设置（分组模式） -->
+    <div class="setup-section" id="section-group">
+      <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;">选择队伍数量</p>
+      <div class="group-select" id="group-select">
+        <div class="group-option selected" data-groups="2">
+          <span class="icon">🔴🔵</span><span class="label">2 组</span>
+        </div>
+        <div class="group-option" data-groups="3">
+          <span class="icon">🔴🔵🟢</span><span class="label">3 组</span>
+        </div>
+        <div class="group-option" data-groups="4">
+          <span class="icon">🔴🔵🟢🟡</span><span class="label">4 组</span>
+        </div>
+      </div>
+
+      <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;margin-top:24px;">倒计时时长</p>
+      <div class="timer-select" id="timer-select">
+        <div class="time-option" data-seconds="30">30 秒</div>
+        <div class="time-option selected" data-seconds="60">60 秒</div>
+        <div class="time-option" data-seconds="90">90 秒</div>
+        <div class="time-option" data-seconds="120">120 秒</div>
+      </div>
+    </div>
+
+    <!-- 单人设置（单人模式） -->
+    <div class="setup-section hidden" id="section-solo">
+      <p style="font-size:1.05rem;font-weight:700;margin-bottom:14px;">挑战题目数量</p>
+      <div class="qcount-select" id="qcount-select">
+        <div class="qcount-option selected" data-questions="20">20 题</div>
+        <div class="qcount-option" data-questions="30">30 题</div>
+        <div class="qcount-option" data-questions="50">50 题</div>
+      </div>
     </div>
 
     <div class="setup-buttons">
@@ -296,33 +357,43 @@
   <!-- ==================== 游戏页 ==================== -->
   <div id="screen-game" class="card hidden">
 
-        <!-- 顶部：计时 -->
-        <div class="top-bar">
-          <div class="timer" id="timer">60</div>
-        </div>
+    <div class="top-bar">
+      <div class="timer" id="timer">60</div>
+    </div>
 
-    <!-- 当前队伍 -->
+    <!-- 队伍提示（分组模式） -->
     <div class="team-indicator" id="team-indicator">🔴 第 1 组 答题</div>
+    <!-- 进度提示（单人模式） -->
+    <div class="solo-progress hidden" id="solo-progress">第 1 / 30 题</div>
 
-    <!-- 刺激词 -->
     <div id="stimulus"></div>
-
-    <!-- 选项按钮 -->
     <div id="color-buttons" class="color-grid"></div>
-
-    <!-- 计分板 -->
     <div class="scoreboard" id="scoreboard"></div>
 
-        <!-- 左下角暂停按钮 -->
-        <button class="pause-btn" onclick="pauseGame()" title="暂停 (Esc / P)">⏸</button>
+    <button class="pause-btn" onclick="pauseGame()" title="暂停 (Esc / P)">⏸</button>
   </div>
 
-  <!-- ==================== 结算页 ==================== -->
+  <!-- ==================== 分组结算页 ==================== -->
   <div id="screen-results" class="card hidden">
     <h2 class="ranking-title">🏆 最终排名</h2>
     <p class="ranking-sub" id="ranking-sub"></p>
     <div class="rank-list" id="rank-list"></div>
     <button class="btn btn-primary" style="margin-top:28px;font-size:1.15rem;padding:16px 40px;" onclick="backToSetup()">返回大厅</button>
+  </div>
+
+  <!-- ==================== 单人报告页 ==================== -->
+  <div id="screen-report" class="card hidden">
+    <h2 class="report-title">📊 个人专注力测试报告</h2>
+    <p class="report-sub" id="report-sub">斯特鲁普效应 · 数据分析</p>
+
+    <div class="stat-cards" id="stat-cards"></div>
+    <div class="highlight-card" id="highlight-card"></div>
+    <div class="commentary-box" id="commentary-box"></div>
+
+    <div class="report-buttons">
+      <button class="btn btn-primary" onclick="startSoloReplay()" style="font-size:1.1rem;padding:16px 36px;">🔄 再挑战一次</button>
+      <button class="btn" style="background:#333;color:#aaa;" onclick="backToSetup()">🏠 返回主界面</button>
+    </div>
   </div>
 
 </div>
@@ -336,7 +407,7 @@ const TEAM_DOTS = ['🔴','🔵','🟢','🟡'];
 const TEAM_COLORS = ['#e74c3c','#3498db','#2ecc71','#f1c40f'];
 const COOLDOWN_MS = 450;
 
-// ==================== 音效（Web Audio API） ====================
+// ==================== 音效 ====================
 let audioCtx = null;
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -359,59 +430,102 @@ function sfxWrong()   { playSound(120, 'square', .25, .06); }
 function sfxEnd()     { playSound(440, 'triangle', .3, .1); setTimeout(()=>playSound(660,'triangle',.3,.1),150); setTimeout(()=>playSound(880,'triangle',.5,.2),300); }
 
 // ==================== 状态 ====================
+// 通用
+let gameMode    = 'group'; // 'group' | 'solo'
+let gameActive  = false;
+let paused      = false;
+let cooldown    = false;
+
+// 分组模式
 let numTeams     = 2;
 let totalSeconds = 60;
-let teams        = [];    // [{name, score}]
+let teams        = [];
 let currentTeam  = 0;
-let trials       = [];
-let trialIndex   = 0;
 let timeLeft     = 0;
 let timerHandle  = null;
-let cooldown     = false;
-let paused       = false;
-let gameActive   = false;
 
-// ==================== 设置页逻辑 ====================
+// 单人模式
+let soloQuestionCount = 20;
+let soloData     = [];    // [{word,color,congruent,answer,correct,rt}]
+let soloProgress = 0;
+
+// 试次
+let trials       = [];
+let trialIndex   = 0;
+let trialStartTime = 0;  // 当前题目渲染时间
+
+// ==================== 大厅逻辑 ====================
+
+// 模式切换
+document.getElementById('mode-select').addEventListener('click', e => {
+  const opt = e.target.closest('.mode-option');
+  if (!opt) return;
+  document.querySelectorAll('.mode-option').forEach(o=>o.classList.remove('selected'));
+  opt.classList.add('selected');
+  gameMode = opt.dataset.mode;
+
+  document.getElementById('section-group').classList.toggle('hidden', gameMode==='solo');
+  document.getElementById('section-solo').classList.toggle('hidden', gameMode==='group');
+});
+
+// 分组数量
 document.getElementById('group-select').addEventListener('click', e => {
   const opt = e.target.closest('.group-option');
   if (!opt) return;
-  document.querySelectorAll('.group-option').forEach(o=>o.classList.remove('selected'));
+  document.querySelectorAll('#group-select .group-option').forEach(o=>o.classList.remove('selected'));
   opt.classList.add('selected');
   numTeams = parseInt(opt.dataset.groups);
 });
+
+// 倒计时
 document.getElementById('timer-select').addEventListener('click', e => {
   const opt = e.target.closest('.time-option');
   if (!opt) return;
-  document.querySelectorAll('.time-option').forEach(o=>o.classList.remove('selected'));
+  document.querySelectorAll('#timer-select .time-option').forEach(o=>o.classList.remove('selected'));
   opt.classList.add('selected');
   totalSeconds = parseInt(opt.dataset.seconds);
 });
 
+// 题目数量
+document.getElementById('qcount-select').addEventListener('click', e => {
+  const opt = e.target.closest('.qcount-option');
+  if (!opt) return;
+  document.querySelectorAll('#qcount-select .qcount-option').forEach(o=>o.classList.remove('selected'));
+  opt.classList.add('selected');
+  soloQuestionCount = parseInt(opt.dataset.questions);
+});
+
 function resetSetup() {
-  document.querySelector('#group-select .group-option[data-groups="2"]').classList.add('selected');
-  document.querySelectorAll('#group-select .group-option').forEach(o=>{
-    if (o.dataset.groups!='2') o.classList.remove('selected');
-  });
-  document.querySelector('#timer-select .time-option[data-seconds="60"]').classList.add('selected');
-  document.querySelectorAll('#timer-select .time-option').forEach(o=>{
-    if (o.dataset.seconds!='60') o.classList.remove('selected');
-  });
-  numTeams = 2; totalSeconds = 60;
+  // 重置模式
+  document.querySelectorAll('.mode-option').forEach(o=>o.classList.toggle('selected', o.dataset.mode==='group'));
+  gameMode = 'group';
+  document.getElementById('section-group').classList.remove('hidden');
+  document.getElementById('section-solo').classList.add('hidden');
+
+  // 重置分组
+  document.querySelectorAll('#group-select .group-option').forEach(o=>o.classList.toggle('selected', o.dataset.groups=='2'));
+  numTeams = 2;
+
+  // 重置时间
+  document.querySelectorAll('#timer-select .time-option').forEach(o=>o.classList.toggle('selected', o.dataset.seconds=='60'));
+  totalSeconds = 60;
+
+  // 重置题目数
+  document.querySelectorAll('#qcount-select .qcount-option').forEach(o=>o.classList.toggle('selected', o.dataset.questions=='20'));
+  soloQuestionCount = 20;
 }
 
 function showScreen(id) {
-  ['screen-setup','screen-game','screen-results'].forEach(s=>document.getElementById(s).classList.add('hidden'));
+  ['screen-setup','screen-game','screen-results','screen-report'].forEach(s=>document.getElementById(s).classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }
 
 // ==================== 生成公平试次 ====================
 function generateFairTrials(n) {
-  // 确保每个队伍遇到的一致/冲突试次比例相同
   const list = [];
-  const perTeam = Math.ceil(n / numTeams) * numTeams; // 对齐队伍数
-  const half = perTeam / 2;
+  const total = (gameMode==='group') ? Math.ceil(n / numTeams) * numTeams : n;
+  const half = total / 2;
 
-  // 一半一致，一半冲突，随机穿插
   for (let i = 0; i < half; i++) {
     const word = COLORS[Math.floor(Math.random() * COLORS.length)];
     list.push({ word, color: word, congruent: true });
@@ -422,7 +536,6 @@ function generateFairTrials(n) {
     const color = others[Math.floor(Math.random() * others.length)];
     list.push({ word, color, congruent: false });
   }
-  // Fisher-Yates shuffle
   for (let i = list.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [list[i], list[j]] = [list[j], list[i]];
@@ -430,43 +543,69 @@ function generateFairTrials(n) {
   return list;
 }
 
-// ==================== 开始游戏 ====================
+// ==================== 开始游戏（双模式分支） ====================
 function startGame() {
-  // 初始化队伍
-  teams = [];
-  for (let i = 0; i < numTeams; i++) {
-    teams.push({ name: `第 ${i+1} 组`, score: 0 });
-  }
-  currentTeam = 0;
-  trialIndex  = 0;
-  timeLeft    = totalSeconds;
+  gameActive  = true;
   cooldown    = false;
   paused      = false;
-  gameActive  = true;
+  trialIndex  = 0;
 
-  // 生成试次（预估足够：按每秒1题）
-  trials = generateFairTrials(Math.max(totalSeconds * 2, 60));
+  if (gameMode === 'group') {
+    // ---- 分组模式 ----
+    teams = [];
+    for (let i = 0; i < numTeams; i++) {
+      teams.push({ name: `第 ${i+1} 组`, score: 0 });
+    }
+    currentTeam = 0;
+    timeLeft    = totalSeconds;
+    trials = generateFairTrials(Math.max(totalSeconds * 2, 60));
 
-  showScreen('screen-game');
-  renderScoreboard();
-  updateTimer();
-  updateTeamIndicator();
-  showTrial();
+    document.getElementById('team-indicator').classList.remove('hidden');
+    document.getElementById('solo-progress').classList.add('hidden');
+    document.getElementById('scoreboard').classList.remove('hidden');
+    document.getElementById('timer').classList.remove('hidden');
+    document.getElementById('pause-hint').textContent = '剩余时间：' + timeLeft + ' 秒';
 
-  // 启动倒计时
-  timerHandle = setInterval(() => {
-    if (paused) return;
-    timeLeft--;
+    showScreen('screen-game');
+    renderScoreboard();
     updateTimer();
-    if (timeLeft <= 0) endGame();
-  }, 1000);
+    updateTeamIndicator();
+    showTrial();
+
+    timerHandle = setInterval(() => {
+      if (paused) return;
+      timeLeft--;
+      updateTimer();
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  } else {
+    // ---- 单人模式 ----
+    soloData     = [];
+    soloProgress = 0;
+    trials = generateFairTrials(soloQuestionCount);
+
+    document.getElementById('team-indicator').classList.add('hidden');
+    document.getElementById('solo-progress').classList.remove('hidden');
+    document.getElementById('scoreboard').classList.add('hidden');
+    document.getElementById('timer').classList.add('hidden');
+    document.getElementById('pause-hint').textContent = '进度：' + soloProgress + ' / ' + soloQuestionCount;
+
+    showScreen('screen-game');
+    updateSoloProgress();
+    showTrial();
+  }
 }
 
 // ==================== 显示试次 ====================
 function showTrial() {
   if (trialIndex >= trials.length) {
-    trials = generateFairTrials(Math.max(timeLeft * 2 + 10, 20));
-    trialIndex = 0;
+    if (gameMode === 'group') {
+      trials = generateFairTrials(Math.max(timeLeft * 2 + 10, 20));
+      trialIndex = 0;
+    } else {
+      endGame();
+      return;
+    }
   }
   const t = trials[trialIndex];
   const el = document.getElementById('stimulus');
@@ -476,6 +615,9 @@ function showTrial() {
   renderButtons();
   cooldown = false;
   document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('locked'));
+
+  // 记录题目渲染时间（单人模式用于 RT）
+  trialStartTime = performance.now();
 }
 
 function renderButtons() {
@@ -491,15 +633,37 @@ function answer(userColor) {
   if (!gameActive || cooldown || paused) return;
   cooldown = true;
 
-  // 锁定按钮
   document.querySelectorAll('.color-btn').forEach(b => b.classList.add('locked'));
 
+  const rt = performance.now() - trialStartTime;
   const trial = trials[trialIndex];
   const correct = (userColor === trial.color);
 
+  // ---- 单人模式：记录数据 ----
+  if (gameMode === 'solo') {
+    soloData.push({
+      word:      trial.word,
+      color:     trial.color,
+      congruent: trial.congruent,
+      answer:    userColor,
+      correct:   correct,
+      rt:        rt
+    });
+    soloProgress++;
+  }
+
+  // ---- 分组模式：加分 ----
+  if (gameMode === 'group') {
+    if (correct) {
+      teams[currentTeam].score++;
+      renderScoreboard();
+    }
+    currentTeam = (currentTeam + 1) % numTeams;
+    updateTeamIndicator();
+  }
+
+  // 反馈
   if (correct) {
-    teams[currentTeam].score++;
-    renderScoreboard();
     flashScreen('correct');
     showBigFeedback('✓', 'correct');
     sfxCorrect();
@@ -511,13 +675,19 @@ function answer(userColor) {
 
   trialIndex++;
 
-  // 切换队伍
-  currentTeam = (currentTeam + 1) % numTeams;
-  updateTeamIndicator();
-
-  // 冷却后下一题
+  // 下一题
   setTimeout(() => {
-    if (gameActive && !paused) showTrial();
+    if (!gameActive || paused) return;
+
+    // 单人模式检查是否完成
+    if (gameMode === 'solo') {
+      updateSoloProgress();
+      if (soloProgress >= soloQuestionCount) {
+        endGame();
+        return;
+      }
+    }
+    showTrial();
   }, COOLDOWN_MS);
 }
 
@@ -531,7 +701,6 @@ function flashScreen(type) {
     document.body.classList.remove('shake');
   }, 350);
 }
-
 function showBigFeedback(symbol, type) {
   const el = document.getElementById('big-fb');
   el.textContent = symbol;
@@ -545,13 +714,15 @@ function updateTimer() {
   el.textContent = timeLeft;
   el.classList.toggle('warning', timeLeft <= 10);
 }
-
 function updateTeamIndicator() {
   const el = document.getElementById('team-indicator');
   el.innerHTML = `${TEAM_DOTS[currentTeam]} <span style="color:${TEAM_COLORS[currentTeam]}">${teams[currentTeam].name}</span> 答题`;
   renderScoreboard();
 }
-
+function updateSoloProgress() {
+  document.getElementById('solo-progress').textContent =
+    `当前进度：${soloProgress} / ${soloQuestionCount} 题`;
+}
 function renderScoreboard() {
   const container = document.getElementById('scoreboard');
   container.innerHTML = teams.map((t, i) => `
@@ -564,17 +735,15 @@ function renderScoreboard() {
 
 // ==================== 暂停/恢复 ====================
 function pauseGame() {
-  if (!gameActive || timeLeft <= 0) return;
+  if (!gameActive) return;
+  if (gameMode==='group' && timeLeft<=0) return;
   paused = true;
-  document.getElementById('pause-time').textContent = timeLeft + ' 秒';
   document.getElementById('pause-overlay').classList.remove('hidden');
 }
-
 function resumeGame() {
   paused = false;
   document.getElementById('pause-overlay').classList.add('hidden');
 }
-
 function abortGame() {
   clearInterval(timerHandle);
   gameActive = false;
@@ -583,28 +752,38 @@ function abortGame() {
   document.getElementById('pause-overlay').classList.add('hidden');
   backToSetup();
 }
-
 function restartRound() {
-  for (let i = 0; i < numTeams; i++) teams[i].score = 0;
-  currentTeam = 0;
-  trialIndex  = 0;
-  timeLeft    = totalSeconds;
-  cooldown    = false;
-  paused      = false;
-  gameActive  = true;
-  trials = generateFairTrials(Math.max(totalSeconds * 2, 60));
+  if (gameMode === 'group') {
+    for (let i = 0; i < numTeams; i++) teams[i].score = 0;
+    currentTeam = 0;
+    timeLeft    = totalSeconds;
+    trialIndex  = 0;
+    trials = generateFairTrials(Math.max(totalSeconds * 2, 60));
+  } else {
+    soloData     = [];
+    soloProgress = 0;
+    trialIndex   = 0;
+    trials = generateFairTrials(soloQuestionCount);
+  }
+  paused = false;
+  cooldown = false;
+  gameActive = true;
   document.getElementById('pause-overlay').classList.add('hidden');
-  renderScoreboard();
-  updateTimer();
-  updateTeamIndicator();
-  showTrial();
-  clearInterval(timerHandle);
-  timerHandle = setInterval(() => {
-    if (paused) return;
-    timeLeft--;
+
+  if (gameMode === 'group') {
+    renderScoreboard();
     updateTimer();
-    if (timeLeft <= 0) endGame();
-  }, 1000);
+    updateTeamIndicator();
+    timerHandle = setInterval(() => {
+      if (paused) return;
+      timeLeft--;
+      updateTimer();
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  } else {
+    updateSoloProgress();
+  }
+  showTrial();
 }
 
 // ==================== 键盘 ====================
@@ -615,36 +794,144 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ==================== 结束游戏 ====================
+// ==================== 结束游戏（双模式分支） ====================
 function endGame() {
   clearInterval(timerHandle);
   gameActive = false;
   cooldown = true;
-
   sfxEnd();
 
-  // 排名
-  const ranked = [...teams].sort((a,b)=>b.score-a.score);
-
-  document.getElementById('ranking-sub').textContent =
-    `共 ${numTeams} 组 · ${totalSeconds} 秒倒计时`;
-
-  const rankList = document.getElementById('rank-list');
-  const crowns = ['🥇','🥈','🥉','🏅'];
-  rankList.innerHTML = ranked.map((t, i) => `
-    <div class="rank-row">
-      <div class="rank-num">${crowns[i]||''}</div>
-      <div class="rank-name">
-        <span style="color:${TEAM_COLORS[teams.indexOf(t)]}">${TEAM_DOTS[teams.indexOf(t)]}</span>
-        ${t.name}
+  if (gameMode === 'group') {
+    // ---- 分组结算 ----
+    const ranked = [...teams].sort((a,b)=>b.score-a.score);
+    document.getElementById('ranking-sub').textContent =
+      `共 ${numTeams} 组 · ${totalSeconds} 秒倒计时`;
+    document.getElementById('rank-list').innerHTML = ranked.map((t, i) => `
+      <div class="rank-row">
+        <div class="rank-num">${['🥇','🥈','🥉','🏅'][i]||''}</div>
+        <div class="rank-name">
+          <span style="color:${TEAM_COLORS[teams.indexOf(t)]}">${TEAM_DOTS[teams.indexOf(t)]}</span>
+          ${t.name}
+        </div>
+        <div class="rank-score">${t.score} 分</div>
       </div>
-      <div class="rank-score">${t.score} 分</div>
-    </div>
-  `).join('');
-
-  showScreen('screen-results');
+    `).join('');
+    showScreen('screen-results');
+  } else {
+    // ---- 单人报告 ----
+    showSoloReport();
+  }
 }
 
+// ==================== 单人报告 ====================
+function showSoloReport() {
+  const total    = soloData.length;
+  const correct  = soloData.filter(d=>d.correct).length;
+  const wrong    = total - correct;
+  const accuracy = total > 0 ? (correct / total * 100) : 0;
+  const avgRT    = total > 0 ? soloData.reduce((s,d)=>s+d.rt,0) / total : 0;
+
+  const congruent   = soloData.filter(d=>d.congruent && d.correct);
+  const incongruent = soloData.filter(d=>!d.congruent && d.correct);
+  const avgCongruent   = congruent.length   > 0 ? congruent.reduce((s,d)=>s+d.rt,0)   / congruent.length   : 0;
+  const avgIncongruent = incongruent.length > 0 ? incongruent.reduce((s,d)=>s+d.rt,0) / incongruent.length : 0;
+  const stroopDelay    = avgIncongruent - avgCongruent;
+
+  document.getElementById('report-sub').textContent =
+    `共 ${total} 题 · ${correct} 对 ${wrong} 错`;
+
+  // 数据卡片
+  document.getElementById('stat-cards').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-val" style="color:#667eea">${accuracy.toFixed(1)}%</div>
+      <div class="stat-lbl">整体正确率</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:#f1c40f">${avgRT.toFixed(0)} ms</div>
+      <div class="stat-lbl">平均反应时间</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:#2ecc71">${avgCongruent.toFixed(0)} ms</div>
+      <div class="stat-lbl">一致题平均用时</div>
+      <div class="stat-sub">${congruent.length} 题</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:#e74c3c">${avgIncongruent.toFixed(0)} ms</div>
+      <div class="stat-lbl">冲突题平均用时</div>
+      <div class="stat-sub">${incongruent.length} 题</div>
+    </div>
+  `;
+
+  // 斯特鲁普干扰值
+  const delaySign = stroopDelay >= 0 ? '+' : '';
+  document.getElementById('highlight-card').innerHTML = `
+    <div class="hl-val">${delaySign}${stroopDelay.toFixed(0)} ms</div>
+    <div class="hl-lbl">⚡ 斯特鲁普干扰值（冲突题 − 一致题）</div>
+    <p style="font-size:.82rem;color:var(--sub);line-height:1.5;">
+      冲突题平均 ${avgIncongruent.toFixed(0)} ms &nbsp;−&nbsp; 一致题平均 ${avgCongruent.toFixed(0)} ms
+    </p>
+  `;
+
+  // 动态评语
+  let commentary = '';
+  if (stroopDelay > 50 && accuracy >= 85) {
+    commentary = {
+      icon:'🧠', title:'典型的斯特鲁普效应',
+      text:`你的抗干扰能力较强——在冲突题上的反应慢了约 <strong>${stroopDelay.toFixed(0)} ms</strong>，这是大脑在处理"字面意义 vs 颜色"冲突时产生的自然延迟。你的正确率很高，说明你在放慢速度后依然保持了良好的判断力。多加练习能进一步降低干扰延迟。`
+    };
+  } else if (stroopDelay > 50 && accuracy < 85) {
+    commentary = {
+      icon:'📚', title:'显著的斯特鲁普效应',
+      text:`你的大脑在处理文字意义和字体颜色冲突时产生了明显的延迟（<strong>${stroopDelay.toFixed(0)} ms</strong>），同时正确率有提升空间。建议多进行专注力训练，练习快速抑制自动化的阅读反应。`
+    };
+  } else if (stroopDelay <= 50 && accuracy >= 85) {
+    commentary = {
+      icon:'🏆', title:'卓越的抗干扰能力',
+      text:`你几乎没有受到斯特鲁普效应的干扰！冲突题与一致题的反应时间差异很小（仅 <strong>${stroopDelay.toFixed(0)} ms</strong>），同时保持了高正确率。你的大脑具有极高的认知控制水平，能够高效抑制无关信息。`
+    };
+  } else if (stroopDelay <= 50 && accuracy < 85) {
+    commentary = {
+      icon:'🎯', title:'速度优先策略',
+      text:`你的反应很快，冲突没有显著拖慢你的速度（干扰值仅 <strong>${stroopDelay.toFixed(0)} ms</strong>），但正确率偏低。你可能倾向于快速作答而非仔细判断。建议尝试在保持速度的同时提高准确度。`
+    };
+  } else {
+    commentary = {
+      icon:'💡', title:'继续加油',
+      text:`斯特鲁普效应是每个人都有的认知现象。通过有意识的训练，你可以逐步提升对颜色-文字冲突的处理速度。建议再测一次，尝试保持放松专注的状态。`
+    };
+  }
+
+  document.getElementById('commentary-box').innerHTML = `
+    <span class="commentary-icon">${commentary.icon}</span>
+    <div class="commentary-title">${commentary.title}</div>
+    <div class="commentary-text">${commentary.text}</div>
+  `;
+
+  showScreen('screen-report');
+}
+
+// ==================== 单人再挑战 ====================
+function startSoloReplay() {
+  gameMode   = 'solo';
+  gameActive = true;
+  cooldown   = false;
+  paused     = false;
+  trialIndex = 0;
+  soloData   = [];
+  soloProgress = 0;
+  trials = generateFairTrials(soloQuestionCount);
+
+  document.getElementById('team-indicator').classList.add('hidden');
+  document.getElementById('solo-progress').classList.remove('hidden');
+  document.getElementById('scoreboard').classList.add('hidden');
+  document.getElementById('timer').classList.add('hidden');
+
+  showScreen('screen-game');
+  updateSoloProgress();
+  showTrial();
+}
+
+// ==================== 返回大厅 ====================
 function backToSetup() {
   clearInterval(timerHandle);
   gameActive = false;
